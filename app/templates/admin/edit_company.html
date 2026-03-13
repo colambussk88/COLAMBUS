@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Company Login{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header">Edit Login Credentials</div>
+        <div class="card-body">
+            <h5 class="mb-3">{{ company.company_name }} — {{ company.owner_name }}</h5>
+            <form method="post">
+                <div class="mb-3">
+                    <label class="form-label">Company Email</label>
+                    <input class="form-control" type="text" value="{{ company.email }}" readonly>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+                    <input name="username" class="form-control" type="text" value="{{ user.username if user else '' }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Password (leave blank to keep current)</label>
+                    <input name="password" class="form-control" type="password">
+                </div>
+
+                <button class="btn btn-primary" type="submit">Save</button>
+                <a class="btn btn-secondary" href="{{ url_for('admin.companies_list') }}">Cancel</a>
+            </form>
+            </div>
+        </div>
+    </div>
+
+    {% if logs %}
+    <div class="card mt-3">
+        <div class="card-header">Recent Logs</div>
+        <div class="card-body">
+            <ul class="list-group">
+                {% for l in logs %}
+                <li class="list-group-item">
+                    <strong>{{ l.action }}</strong>
+                    <div class="text-muted small">{{ l.created_date.strftime('%Y-%m-%d %H:%M:%S') }} by {% if l.performer %}{{ l.performer.username }}{% else %}system{% endif %}</div>
+                    <div>{{ l.details }}</div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

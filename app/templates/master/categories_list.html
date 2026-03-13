@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Categories - Master{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Categories</h2>
+<a href="{{ url_for('master.add_category') }}" class="btn btn-primary mb-3">Add Category</a>
+<div class="card">
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr><th>Name</th><th>Description</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                {% for c in categories %}
+                <tr>
+                    <td>{{ c.name }}</td>
+                    <td>{{ c.description }}</td>
+                    <td>
+                        <a class="btn btn-sm btn-secondary" href="{{ url_for('master.edit_category', cat_id=c.id) }}">Edit</a>
+                        <form action="{{ url_for('master.delete_category', cat_id=c.id) }}" method="post" style="display:inline">
+                            <button class="btn btn-sm btn-danger" type="submit">Disable</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

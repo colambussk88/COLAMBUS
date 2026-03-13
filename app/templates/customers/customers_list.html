@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}Customers - Pharmacy Management System{% endblock %}
+
+{% block extra_css %}
+<style>
+
+/* Table alignment */
+.customer-table td,
+.customer-table th{
+    vertical-align: middle;
+}
+
+/* Long email handling */
+.email-text{
+    max-width:220px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+/* Currency alignment */
+.currency{
+    text-align:right;
+    white-space:nowrap;
+}
+
+/* Action buttons */
+.action-buttons{
+    display:flex;
+    gap:6px;
+    justify-content:center;
+}
+
+/* Customer icon alignment */
+.customer-name{
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+<h2><i class="fas fa-users"></i> Customers</h2>
+
+<a href="{{ url_for('customers.add_customer') }}" class="btn btn-primary">
+<i class="fas fa-plus"></i> Add Customer
+</a>
+
+</div>
+
+
+<div class="card shadow-sm">
+
+<div class="card-header">
+
+<form method="get"
+action="{{ url_for('customers.customers_list') }}"
+class="d-flex gap-2 align-items-center">
+
+<input
+type="text"
+name="search"
+class="form-control"
+placeholder="Search by name, phone, or email..."
+value="{{ search }}"
+>
+
+<button type="submit" class="btn btn-success">
+<i class="fas fa-search"></i>
+</button>
+
+</form>
+
+</div>
+
+
+<div class="card-body">
+
+{% if customers.items %}
+
+<div class="table-responsive">
+
+<table class="table table-hover customer-table">
+
+<thead class="table-light">
+
+<tr>
+
+<th>Customer Name</th>
+<th class="text-center">Phone</th>
+<th>Email</th>
+<th class="currency">Credit Limit</th>
+<th class="text-center">Outstanding Balance</th>
+<th class="text-center">Actions</th>
+
+</tr>
+
+</thead>
+
+
+<tbody>
+
+{% for customer in customers.items %}
+
+<tr>
+
+<td>
+<div class="customer-name">
+<i class="fas fa-user-circle text-secondary"></i>
+<strong>{{ customer.customer_name }}</strong>
+</div>
+</td>
+
+<td class="text-center">
+{{ customer.phone }}
+</td>
+
+<td class="email-text" title="{{ customer.email }}">
+{{ customer.email or '-' }}
+</td>
+
+<td class="currency">
+₹{{ "%.2f"|format(customer.credit_limit) }}
+</td>
+
+<td class="text-center">
+
+{% if customer.current_balance > 0 %}
+
+<span class="badge bg-danger">
+₹{{ "%.2f"|format(customer.current_balance) }}
+</span>
+
+{% else %}
+
+<span class="badge bg-success">
+₹{{ "%.2f"|format(customer.current_balance) }}
+</span>
+
+{% endif %}
+
+</td>
+
+<td>
+
+<div class="action-buttons">
+
+<a
+href="{{ url_for('customers.customer_detail', customer_id=customer.id) }}"
+class="btn btn-sm btn-info"
+title="View Customer">
+
+<i class="fas fa-eye"></i>
+
+</a>
+
+<a
+href="{{ url_for('customers.edit_customer', customer_id=customer.id) }}"
+class="btn btn-sm btn-warning"
+title="Edit Customer">
+
+<i class="fas fa-edit"></i>
+
+</a>
+
+</div>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+
+<!-- Pagination -->
+{% if customers.pages > 1 %}
+
+<nav aria-label="Page navigation">
+
+<ul class="pagination justify-content-center">
+
+{% if customers.has_prev %}
+
+<li class="page-item">
+
+<a
+class="page-link"
+href="{{ url_for('customers.customers_list', page=customers.prev_num, search=search) }}"
+>
+
+Previous
+
+</a>
+
+</li>
+
+{% endif %}
+
+
+{% for page_num in customers.iter_pages() %}
+
+{% if page_num %}
+
+<li class="page-item {% if page_num == customers.page %}active{% endif %}">
+
+<a
+class="page-link"
+href="{{ url_for('customers.customers_list', page=page_num, search=search) }}"
+>
+
+{{ page_num }}
+
+</a>
+
+</li>
+
+{% endif %}
+
+{% endfor %}
+
+
+{% if customers.has_next %}
+
+<li class="page-item">
+
+<a
+class="page-link"
+href="{{ url_for('customers.customers_list', page=customers.next_num, search=search) }}"
+>
+
+Next
+
+</a>
+
+</li>
+
+{% endif %}
+
+</ul>
+
+</nav>
+
+{% endif %}
+
+
+{% else %}
+
+<div class="alert alert-info">
+
+<i class="fas fa-info-circle"></i>
+No customers found.
+<a href="{{ url_for('customers.add_customer') }}">Add a new customer</a>
+
+</div>
+
+{% endif %}
+
+</div>
+
+</div>
+
+{% endblock %}

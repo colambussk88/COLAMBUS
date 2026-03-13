@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.product_name }} - Pharmacy Management System{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('inventory.products_list') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Products
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">{{ product.product_name }}</h5>
+            </div>
+            <div class="card-body">
+                {% if product.image_path %}
+                <div class="text-center mb-4">
+                    <img src="{{ url_for('static', filename=product.image_path) }}" alt="{{ product.product_name }}" class="img-fluid" style="max-height: 300px;">
+                </div>
+                {% endif %}
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Generic Name</label>
+                        <p class="fw-bold">{{ product.generic_name or 'N/A' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Brand</label>
+                        <p class="fw-bold">{{ product.brand or 'N/A' }}</p>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">SKU</label>
+                        <p class="fw-bold">{{ product.sku }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Barcode</label>
+                        <p class="fw-bold">{{ product.barcode or 'N/A' }}</p>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Category</label>
+                        <p class="fw-bold">{{ product.category }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Manufacturer</label>
+                        <p class="fw-bold">{{ product.manufacturer or 'N/A' }}</p>
+                    </div>
+                </div>
+                
+                {% if product.description %}
+                <div class="mb-3">
+                    <label class="form-label text-muted">Description</label>
+                    <p>{{ product.description }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">Stock Information</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label text-muted">Current Stock</label>
+                    <p class="fw-bold display-6">{{ product.quantity }}</p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted">Minimum Level</label>
+                    <p class="text-muted">{{ product.minimum_stock_level }}</p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted">Reorder Level</label>
+                    <p class="text-muted">{{ product.reorder_level }}</p>
+                </div>
+                {% if product.quantity <= product.minimum_stock_level %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> Low Stock Warning
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">Pricing</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label text-muted">Purchase Price</label>
+                    <p class="fw-bold">₹{{ "%.2f"|format(product.purchase_price) }}</p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted">Selling Price</label>
+                    <p class="fw-bold">₹{{ "%.2f"|format(product.selling_price) }}</p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted">MRP</label>
+                    <p class="fw-bold">₹{{ "%.2f"|format(product.mrp) }}</p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted">Tax</label>
+                    <p class="text-muted">{{ product.tax_percentage }}%</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Dates</h6>
+            </div>
+            <div class="card-body">
+                {% if product.manufacturing_date %}
+                <div class="mb-2">
+                    <label class="form-label text-muted">Manufacturing Date</label>
+                    <p class="text-muted">{{ product.manufacturing_date.strftime('%Y-%m-%d') }}</p>
+                </div>
+                {% endif %}
+                {% if product.expiry_date_date %}
+                <div class="mb-2">
+                    <label class="form-label text-muted">Expiry Date</label>
+                    <p class="fw-bold {% if product.expiry_date_date < now %}text-danger{% else %}text-success{% endif %}">
+                        {{ product.expiry_date_date.strftime('%Y-%m-%d') }}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if movements %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Stock Movement History</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Quantity</th>
+                        <th>Reference</th>
+                        <th>Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for movement in movements %}
+                    <tr>
+                        <td>{{ movement.created_date.strftime('%Y-%m-%d %H:%M') if movement.created_date else '' }}</td>
+                        <td>
+                            <span class="badge {% if movement.movement_type == 'sale' %}bg-danger{% elif movement.movement_type == 'purchase' %}bg-success{% elif movement.movement_type == 'return' %}bg-warning{% else %}bg-info{% endif %}">
+                                {{ movement.movement_type.capitalize() }}
+                            </span>
+                        </td>
+                        <td>{{ movement.quantity }}</td>
+                        <td>{{ movement.reference_id or '-' }}</td>
+                        <td>{{ movement.reason or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="mt-4">
+    <a href="{{ url_for('inventory.edit_product', product_id=product.id) }}" class="btn btn-primary">
+        <i class="fas fa-edit"></i> Edit Product
+    </a>
+</div>
+
+ 
+{% endblock %}

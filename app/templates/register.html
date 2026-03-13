@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Pharmacy Management System{% endblock %}
+
+{% block content %}
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-9">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h4 class="mb-0"><i class="fas fa-pills"></i> Pharmacy Registration</h4>
+                    <small class="text-white">Create your pharmacy account</small>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <h5 class="mt-4 mb-3">Company Details</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="company_name" class="form-label">Company Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="company_name" name="company_name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="owner_name" class="form-label">Owner Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="owner_name" name="owner_name" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">Phone <span class="text-danger">*</span></label>
+                                <input type="tel" class="form-control" id="phone" name="phone" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Address <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="address" name="address" rows="2" required></textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="city" class="form-label">City <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="city" name="city" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="state" class="form-label">State <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="state" name="state" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="country" class="form-label">Country <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="country" name="country" value="India" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="postal_code" class="form-label">Postal Code <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="postal_code" name="postal_code" required>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="gst_number" class="form-label">GST/VAT Number</label>
+                                <input type="text" class="form-control" id="gst_number" name="gst_number">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="drug_license_number" class="form-label">Drug License Number</label>
+                                <input type="text" class="form-control" id="drug_license_number" name="drug_license_number">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="logo" class="form-label">Company Logo</label>
+                            <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
+                            <small class="text-muted">Accepted formats: PNG, JPG, JPEG, GIF (Max 16MB)</small>
+                        </div>
+                        
+                        <hr>
+                        <h5 class="mb-3">Account Credentials</h5>
+                        
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                            <small class="text-muted">Must be unique</small>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                                <small class="text-muted">Minimum 6 characters</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="confirm_password" class="form-label">Confirm Password <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">Register Company</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer text-center bg-white">
+                    <p class="mb-0">
+                        Already registered? <a href="{{ url_for('auth.login') }}" class="fw-bold">Login here</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

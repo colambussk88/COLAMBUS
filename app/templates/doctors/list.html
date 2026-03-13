@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Doctors - Pharmacy Management System{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-user-md"></i> Consulting Doctors</h2>
+<div class="mb-3">
+    <a href="{{ url_for('doctors.add_doctor') }}" class="btn btn-success"><i class="fas fa-plus"></i> Add Doctor</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Clinic</th>
+                        <th>Phone</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in doctors %}
+                    <tr>
+                        <td>{{ d.name }}</td>
+                        <td>{{ d.clinic or '' }}</td>
+                        <td>{{ d.phone or '' }}</td>
+                        <td>
+                            <a href="{{ url_for('doctors.edit_doctor', doctor_id=d.id) }}" class="btn btn-sm btn-primary">Edit</a>
+                            <form action="{{ url_for('doctors.delete_doctor', doctor_id=d.id) }}" method="post" style="display:inline;" onsubmit="return confirm('Delete doctor?');">
+                                <button class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

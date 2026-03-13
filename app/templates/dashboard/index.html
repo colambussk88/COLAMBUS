@@ -1,0 +1,513 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Pharmacy Management System{% endblock %}
+
+{% block content %}
+
+<style>
+
+/* Stat Cards */
+.stat-card{
+background:#fff;
+border-radius:12px;
+padding:25px;
+text-align:center;
+box-shadow:0 6px 15px rgba(0,0,0,0.06);
+transition:all .3s ease;
+}
+
+.stat-card:hover{
+transform:translateY(-5px);
+box-shadow:0 10px 25px rgba(0,0,0,0.12);
+}
+
+.stat-icon{
+font-size:28px;
+margin-bottom:10px;
+}
+
+.stat-label{
+font-size:14px;
+color:#6c757d;
+}
+
+.stat-value{
+font-size:28px;
+font-weight:600;
+margin-top:5px;
+}
+
+/* Dashboard Cards */
+
+.card{
+border-radius:12px;
+border:none;
+box-shadow:0 5px 12px rgba(0,0,0,0.05);
+}
+
+.card-header{
+background:#1a472a;
+color:#fff;
+font-weight:600;
+border-radius:12px 12px 0 0;
+}
+
+/* Buttons */
+
+.btn{
+border-radius:8px;
+}
+
+/* Table */
+
+.table thead{
+background:#f8f9fa;
+}
+
+.table-hover tbody tr:hover{
+background:#f1f3f5;
+}
+
+/* Chart */
+
+canvas{
+padding:10px;
+}
+
+</style>
+
+
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+<h3 class="fw-bold">
+<i class="fas fa-chart-line text-success"></i> Dashboard
+</h3>
+
+<span class="text-muted">
+Welcome back Mr Kim👋
+</span>
+</div>
+
+
+<!-- Metrics -->
+<div class="row g-4 mb-4">
+
+<div class="col-md-3">
+<div class="stat-card">
+<div class="stat-icon text-success">
+<i class="fas fa-rupee-sign"></i>
+</div>
+<div class="stat-label">Today's Sales</div>
+<div class="stat-value text-success">
+₹{{ "%.2f"|format(metrics.today_sales) }}
+</div>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="stat-card">
+<div class="stat-icon text-primary">
+<i class="fas fa-chart-line"></i>
+</div>
+<div class="stat-label">Monthly Sales</div>
+<div class="stat-value text-primary">
+₹{{ "%.2f"|format(metrics.month_sales) }}
+</div>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="stat-card">
+<div class="stat-icon text-warning">
+<i class="fas fa-coins"></i>
+</div>
+<div class="stat-label">Total Profit</div>
+<div class="stat-value text-warning">
+₹{{ "%.2f"|format(metrics.total_profit) }}
+</div>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="stat-card">
+<div class="stat-icon text-danger">
+<i class="fas fa-shopping-cart"></i>
+</div>
+<div class="stat-label">Total Purchases</div>
+<div class="stat-value text-danger">
+₹{{ "%.2f"|format(metrics.total_purchases) }}
+</div>
+</div>
+</div>
+
+</div>
+
+
+<!-- Alerts -->
+<div class="row g-4 mb-4">
+
+<div class="col-md-4">
+<div class="card">
+
+<div class="card-header">
+<i class="fas fa-exclamation-triangle"></i> Stock Status
+</div>
+
+<div class="card-body">
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+<span>Low Stock Items</span>
+<span class="badge bg-danger">
+{{ metrics.low_stock_count }}
+</span>
+</div>
+
+<a href="{{ url_for('inventory.low_stock_report') }}" class="btn btn-outline-danger w-100">
+View Low Stock →
+</a>
+
+</div>
+</div>
+</div>
+
+
+<div class="col-md-4">
+<div class="card">
+
+<div class="card-header">
+<i class="fas fa-hourglass-end"></i> Expiry Status
+</div>
+
+<div class="card-body">
+
+<div class="d-flex justify-content-between mb-2">
+<small>30 Days</small>
+<span class="badge bg-info">
+{{ metrics.expiring_30 }}
+</span>
+</div>
+
+<div class="d-flex justify-content-between mb-2">
+<small>60 Days</small>
+<span class="badge bg-info">
+{{ metrics.expiring_60 }}
+</span>
+</div>
+
+<div class="d-flex justify-content-between mb-3">
+<small>90 Days</small>
+<span class="badge bg-info">
+{{ metrics.expiring_90 }}
+</span>
+</div>
+
+<a href="{{ url_for('inventory.expiry_report') }}" class="btn btn-outline-info w-100">
+View Expiry Report →
+</a>
+
+</div>
+</div>
+</div>
+
+
+<div class="col-md-4">
+<div class="card">
+
+<div class="card-header">
+<i class="fas fa-bell"></i> Quick Stats
+</div>
+
+<div class="card-body">
+
+<div class="d-flex justify-content-between mb-2">
+<span>Total Customers</span>
+<span class="badge bg-primary">
+{{ metrics.total_customers }}
+</span>
+</div>
+
+<div class="d-flex justify-content-between mb-3">
+<span>Total Suppliers</span>
+<span class="badge bg-primary">
+{{ metrics.total_suppliers }}
+</span>
+</div>
+
+<a href="{{ url_for('alerts.alerts') }}" class="btn btn-outline-primary w-100">
+View All Alerts →
+</a>
+
+</div>
+</div>
+</div>
+
+</div>
+
+
+<!-- Charts + Actions -->
+
+<div class="row g-4">
+
+<div class="col-lg-8">
+
+<div class="card">
+
+<div class="card-header">
+<i class="fas fa-chart-area"></i> Sales Trend (Last 7 Days)
+</div>
+
+<div class="card-body">
+
+<canvas id="salesChart" height="120"></canvas>
+
+</div>
+</div>
+
+</div>
+
+
+<div class="col-lg-4">
+
+<div class="card">
+
+<div class="card-header">
+<i class="fas fa-bolt"></i> Quick Actions
+</div>
+
+<div class="card-body d-grid gap-2">
+
+<a href="{{ url_for('sales.pos') }}" class="btn btn-primary">
+<i class="fas fa-cash-register"></i> Open POS
+</a>
+
+<a href="{{ url_for('inventory.add_product') }}" class="btn btn-info">
+<i class="fas fa-plus-circle"></i> Add Product
+</a>
+
+<a href="{{ url_for('purchases.add_purchase') }}" class="btn btn-warning">
+<i class="fas fa-shopping-bag"></i> New Purchase
+</a>
+
+<a href="{{ url_for('customers.add_customer') }}" class="btn btn-success">
+<i class="fas fa-user-plus"></i> Add Customer
+</a>
+
+<a href="{{ url_for('suppliers.add_supplier') }}" class="btn btn-dark">
+<i class="fas fa-truck"></i> Add Supplier
+</a>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- Recent Sales -->
+
+<div class="row mt-4">
+
+<div class="col-12">
+
+<div class="card">
+
+<div class="card-header d-flex justify-content-between align-items-center">
+
+<span>
+<i class="fas fa-history"></i> Recent Transactions
+</span>
+
+<a href="{{ url_for('sales.invoices_list') }}" class="btn btn-sm btn-outline-primary">
+View All →
+</a>
+
+</div>
+
+
+<div class="card-body">
+
+{% if recent_sales %}
+
+<div class="table-responsive">
+
+<table class="table table-hover">
+
+<thead>
+
+<tr>
+<th>Invoice #</th>
+<th>Customer</th>
+<th>Date & Time</th>
+<th>Amount</th>
+<th>Payment</th>
+<th>Action</th>
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for sale in recent_sales %}
+
+<tr>
+
+<td>
+<a href="{{ url_for('sales.invoice_detail', sale_id=sale.id) }}">
+<strong>{{ sale.invoice_number }}</strong>
+</a>
+</td>
+
+<td>
+{{ sale.customer_name or 'Walk-in' }}
+</td>
+
+<td>
+{{ sale.invoice_date.strftime('%Y-%m-%d %H:%M') }}
+</td>
+
+<td>
+<strong>
+₹{{ "%.2f"|format(sale.total_amount) }}
+</strong>
+</td>
+
+<td>
+
+<span class="badge bg-{{ 'success' if sale.payment_status == 'paid' else 'warning' }}">
+
+{{ sale.payment_status.upper() }}
+
+</span>
+
+</td>
+
+<td>
+
+<a href="{{ url_for('sales.invoice_detail', sale_id=sale.id) }}" class="btn btn-sm btn-outline-primary">
+
+<i class="fas fa-eye"></i>
+
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+{% else %}
+
+<p class="text-muted text-center py-3">
+
+No sales yet.
+<a href="{{ url_for('sales.pos') }}">Open POS to make a sale.</a>
+
+</p>
+
+{% endif %}
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+{% endblock %}
+
+
+
+{% block extra_js %}
+
+<script>
+
+const ctx = document.getElementById('salesChart').getContext('2d');
+
+const salesData = JSON.parse('{{ sales_by_day | tojson | safe }}');
+
+const labels = Object.keys(salesData);
+
+const data = Object.values(salesData);
+
+
+new Chart(ctx, {
+
+type:'line',
+
+data:{
+
+labels:labels,
+
+datasets:[{
+
+label:'Sales Amount (₹)',
+
+data:data,
+
+borderColor:'#1a472a',
+
+backgroundColor:'rgba(26,71,42,0.1)',
+
+borderWidth:2,
+
+fill:true,
+
+tension:0.4,
+
+pointBackgroundColor:'#1a472a',
+
+pointBorderColor:'#fff',
+
+pointBorderWidth:2,
+
+pointRadius:4,
+
+pointHoverRadius:6
+
+}]
+
+},
+
+options:{
+
+responsive:true,
+
+plugins:{
+
+legend:{
+display:true
+}
+
+},
+
+scales:{
+
+y:{
+beginAtZero:true,
+
+ticks:{
+callback:function(value){
+return '₹'+value;
+}
+}
+
+}
+
+}
+
+}
+
+});
+
+</script>
+
+{% endblock %}

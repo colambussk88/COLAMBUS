@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Suppliers - Pharmacy Management System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-truck"></i> Suppliers</h2>
+    <a href="{{ url_for('suppliers.add_supplier') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add Supplier
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <form method="get" action="{{ url_for('suppliers.suppliers_list') }}" class="d-flex gap-2">
+            <input type="text" name="search" class="form-control" placeholder="Search by name, phone, or email..." value="{{ search }}">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i> Search
+            </button>
+        </form>
+    </div>
+    
+    <div class="card-body">
+        {% if suppliers.items %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Supplier Name</th>
+                        <th>Contact Person</th>
+                        <th>Phone</th>
+                        <th>Email</th>
+                        <th>Payment Terms</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for supplier in suppliers.items %}
+                    <tr>
+                        <td><strong>{{ supplier.supplier_name }}</strong></td>
+                        <td>{{ supplier.contact_person or '-' }}</td>
+                        <td>{{ supplier.phone }}</td>
+                        <td>{{ supplier.email or '-' }}</td>
+                        <td>{{ supplier.payment_terms or '-' }}</td>
+                        <td>
+                            <a href="{{ url_for('suppliers.supplier_detail', supplier_id=supplier.id) }}" class="btn btn-sm btn-info">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            <a href="{{ url_for('suppliers.edit_supplier', supplier_id=supplier.id) }}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if suppliers.pages > 1 %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if suppliers.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('suppliers.suppliers_list', page=suppliers.prev_num, search=search) }}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in suppliers.iter_pages() %}
+                    {% if page_num %}
+                    <li class="page-item {% if page_num == suppliers.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('suppliers.suppliers_list', page=page_num, search=search) }}">{{ page_num }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if suppliers.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('suppliers.suppliers_list', page=suppliers.next_num, search=search) }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> No suppliers found. <a href="{{ url_for('suppliers.add_supplier') }}">Add a new supplier</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

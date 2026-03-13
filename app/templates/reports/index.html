@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - Pharmacy Management System{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-chart-bar"></i> Reports</h2>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-line"></i> Sales Report</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">View detailed sales transactions, revenue analysis, and payment status.</p>
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <a href="{{ url_for('reports.sales_report') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-file-csv"></i> View Sales Report
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('reports.sales_report') }}?export=csv" class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-download"></i> Export to CSV
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-exchange-alt"></i> Sales Returns</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">View all credit notes and sales return transactions.</p>
+                <a href="{{ url_for('reports.sales_returns_report') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-list"></i> View Returns Report
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-shopping-cart"></i> Purchase Report</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">View detailed purchase orders, supplier information, and payment status.</p>
+                <a href="{{ url_for('reports.purchase_report') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-file-csv"></i> View Purchase Report
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-undo"></i> Purchase Returns</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">View all purchase return transactions and debit notes.</p>
+                <a href="{{ url_for('reports.purchase_returns_report') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-list"></i> View Returns Report
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-boxes"></i> Inventory Reports</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">View stock levels, low stock alerts, and expiry reports.</p>
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <a href="{{ url_for('inventory.low_stock_report') }}" class="btn btn-outline-danger btn-sm">
+                            <i class="fas fa-arrow-down"></i> Low Stock
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="{{ url_for('inventory.expiry_report') }}" class="btn btn-outline-warning btn-sm">
+                            <i class="fas fa-calendar-times"></i> Expiry Report
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('inventory.low_stock_report') }}" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-history"></i> Stock Movement
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-calculator"></i> Financial Reports</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">View profit analysis, expense reports, and financial summaries.</p>
+                <ul class="list-unstyled">
+    <li class="mb-2">
+        <a href="{{ url_for('reports.profit_loss_report') }}" class="btn btn-outline-success btn-sm">
+            <i class="fas fa-chart-line"></i> Profit & Loss Report
+        </a>
+    </li>
+
+    <li>
+        <a href="{{ url_for('accounting.accounting_dashboard') }}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-chart-pie"></i> Accounting Dashboard
+        </a>
+    </li>
+</ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Alerts - Pharmacy Management System{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">
+    <i class="fas fa-bell"></i> System Alerts
+</h2>
+
+<div class="row">
+    {% if critical_alerts %}
+    <div class="col-lg-4">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-circle"></i> Critical ({{ critical_alerts|length }})
+                </h5>
+            </div>
+            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                {% for alert in critical_alerts %}
+                <div class="alert alert-danger alert-dismissible" role="alert">
+                    <strong>{{ alert.title }}</strong><br>
+                    {{ alert.message }}
+                    <button type="button" class="btn-close" onclick="deleteAlert({{ alert.id }})"></button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if warning_alerts %}
+    <div class="col-lg-4">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle"></i> Warnings ({{ warning_alerts|length }})
+                </h5>
+            </div>
+            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                {% for alert in warning_alerts %}
+                <div class="alert alert-warning alert-dismissible" role="alert">
+                    <strong>{{ alert.title }}</strong><br>
+                    {{ alert.message }}
+                    <button type="button" class="btn-close" onclick="deleteAlert({{ alert.id }})"></button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if info_alerts %}
+    <div class="col-lg-4">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle"></i> Information ({{ info_alerts|length }})
+                </h5>
+            </div>
+            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                {% for alert in info_alerts %}
+                <div class="alert alert-info alert-dismissible" role="alert">
+                    <strong>{{ alert.title }}</strong><br>
+                    {{ alert.message }}
+                    <button type="button" class="btn-close" onclick="deleteAlert({{ alert.id }})"></button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% if not critical_alerts and not warning_alerts and not info_alerts %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="fas fa-check-circle" style="font-size: 3rem; color: #28a745; opacity: 0.5;"></i><br>
+        <p class="text-muted mt-3">No active alerts. Everything looks good!</p>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function deleteAlert(alertId) {
+    fetch(`{{ url_for('alerts.delete_alert', alert_id=0) }}`.replace('0', alertId), {
+        method: 'POST'
+    }).then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            location.reload();
+        }
+    });
+}
+</script>
+{% endblock %}

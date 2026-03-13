@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - Pharmacy Management System{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    {% if company.logo_path %}
+                    <img src="{{ url_for('static', filename=company.logo_path) }}" class="img-fluid rounded" style="max-height: 150px;">
+                    {% else %}
+                    <div class="bg-light rounded p-4">
+                        <i class="fas fa-hospital" style="font-size: 80px; color: #ccc;"></i>
+                    </div>
+                    {% endif %}
+                    <h5 class="mt-3">{{ company.company_name }}</h5>
+                </div>
+            </div>
+            <div class="card mt-3">
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('auth.edit_profile') }}" class="btn btn-outline-primary btn-sm w-100 mt-2">
+                        <i class="fas fa-edit"></i> Edit Profile
+                    </a>
+                    <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary btn-sm w-100 mt-2">
+                        <i class="fas fa-key"></i> Change Password
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Company Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Company Name:</strong><br>{{ company.company_name }}</p>
+                            <p><strong>Owner:</strong><br>{{ company.owner_name }}</p>
+                            <p><strong>Email:</strong><br>{{ company.email }}</p>
+                            <p><strong>Phone:</strong><br>{{ company.phone }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Address:</strong><br>{{ company.address }}<br>{{ company.city }}, {{ company.state }} {{ company.postal_code }}<br>{{ company.country }}</p>
+                            {% if company.gst_number %}
+                            <p><strong>GST Number:</strong><br>{{ company.gst_number }}</p>
+                            {% endif %}
+                            {% if company.drug_license_number %}
+                            <p><strong>Drug License:</strong><br>{{ company.drug_license_number }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Account Information</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Username:</strong><br>{{ current_user.username }}</p>
+                    <p><strong>User Status:</strong><br><span class="badge bg-success">Active</span></p>
+                        <p><strong>Registered:</strong><br>{{ company.created_date.strftime('%Y-%m-%d %H:%M') if company.created_date else '' }}</p>
+                        <p><strong>Last Login:</strong><br>{{ current_user.last_login.strftime('%Y-%m-%d %H:%M') if current_user.last_login else '' }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

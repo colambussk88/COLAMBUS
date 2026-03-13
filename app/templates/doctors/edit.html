@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Doctor - Pharmacy Management System{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Edit Doctor</h2>
+<form method="post">
+    <div class="mb-3">
+        <label class="form-label">Name</label>
+        <input name="name" class="form-control" value="{{ doctor.name }}" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Clinic</label>
+        <input name="clinic" class="form-control" value="{{ doctor.clinic }}">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Phone</label>
+        <input name="phone" class="form-control" value="{{ doctor.phone }}">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Notes</label>
+        <textarea name="notes" class="form-control">{{ doctor.notes }}</textarea>
+    </div>
+    <button class="btn btn-primary">Save</button>
+    <a href="{{ url_for('doctors.doctors_list') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

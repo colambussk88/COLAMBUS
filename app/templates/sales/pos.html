@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+
+{% block title %}POS - Pharmacy Management System{% endblock %}
+
+{% block content %}
+
+<div class="row h-100" style="margin:-10px;">
+
+    <!-- LEFT SIDE -->
+    <div class="col-lg-8" style="padding:10px;">
+
+        <!-- PRODUCT SEARCH -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="fas fa-search"></i> Product Search</h6>
+            </div>
+
+            <div class="card-body p-2">
+                <div class="input-group input-group-lg">
+                    <input type="text" id="productSearch" class="form-control"
+                        placeholder="Search product by name or barcode..." autofocus>
+
+                    <button class="btn btn-primary" id="searchBtn">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- SHOPPING CART -->
+        <div class="card shadow-sm mt-3">
+
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="fas fa-shopping-cart"></i>
+                    Shopping Cart
+                    <span id="cartCount" class="badge bg-light text-dark ms-2">0</span>
+                </h6>
+
+                <button id="clearCartBtn" class="btn btn-sm btn-outline-light">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+
+            <div class="card-body" style="max-height:500px; overflow-y:auto">
+
+                <div id="emptyCart" class="text-center text-muted py-5">
+                    <i class="fas fa-shopping-cart" style="font-size:4rem; opacity:0.2;"></i>
+                    <p class="mt-3"><strong>Cart is empty</strong></p>
+                    <small>Search products to start billing</small>
+                </div>
+
+                <div id="cartItems"></div>
+
+            </div>
+
+            <div class="card-footer bg-light">
+                <small class="text-muted">Items added will appear here</small>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- RIGHT SIDE -->
+    <div class="col-lg-4" style="padding:10px">
+
+        <div class="card shadow-sm sticky-top" style="top:10px">
+
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-receipt"></i> Billing</h6>
+            </div>
+
+            <div class="card-body">
+
+                <label class="form-label small"><strong>Customer</strong></label>
+                <select id="customerSelect" class="form-select form-select-sm">
+                    <option value="">Walk-in Customer</option>
+
+                    {% for customer in customers %}
+                    <option value="{{customer.id}}">{{customer.customer_name}}</option>
+                    {% endfor %}
+                </select>
+
+
+                <label class="form-label small mt-3"><strong>Doctor</strong></label>
+                <select id="doctorSelect" class="form-select form-select-sm">
+
+                    <option value="">None</option>
+
+                    {% for doctor in doctors %}
+                    <option value="{{doctor.id}}">{{doctor.name}}</option>
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+
+            <div class="card-body border-top">
+
+                <label class="form-label small"><strong>Payment</strong></label>
+
+                <select id="paymentMethod" class="form-select form-select-sm">
+                    <option value="cash">Cash</option>
+                    <option value="card">Card</option>
+                    <option value="upi">UPI</option>
+                </select>
+
+            </div>
+
+
+            <div class="card-body bg-light border-top border-bottom">
+
+                <div class="d-flex justify-content-between">
+                    <span>Subtotal</span>
+                    <strong id="subtotal">₹0.00</strong>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <span>Tax (5%)</span>
+                    <strong id="taxAmount">₹0.00</strong>
+                </div>
+
+                <div class="d-flex justify-content-between mt-2">
+                    <span>Total</span>
+                    <strong id="totalAmount">₹0.00</strong>
+                </div>
+
+            </div>
+
+
+            <div class="card-body">
+                <button id="checkoutBtn" class="btn btn-success w-100">
+                    <i class="fas fa-check-circle"></i> Complete Order
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<style>
+
+.cart-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:white;
+    padding:12px;
+    margin-bottom:8px;
+    border-left:4px solid #0d6efd;
+    border-radius:6px;
+}
+
+.cart-item-name{
+    flex:2;
+}
+
+.cart-item-name small{
+    color:#777;
+}
+
+.cart-item-qty{
+    display:flex;
+    align-items:center;
+    gap:6px;
+}
+
+.cart-item-qty button{
+    width:32px;
+    height:32px;
+}
+
+.cart-item-qty input{
+    width:70px;
+    text-align:center;
+    font-weight:bold;
+}
+
+.cart-item-price{
+    flex:1;
+    text-align:right;
+    font-weight:bold;
+    color:#28a745;
+}
+
+.cart-item-remove{
+    margin-left:10px;
+}
+
+</style>
+
+
+<script>
+
+let cart = []
+
+const subtotalSpan = document.getElementById("subtotal")
+const taxSpan = document.getElementById("taxAmount")
+const totalSpan = document.getElementById("totalAmount")
+const cartCount = document.getElementById("cartCount")
+
+
+function renderCart(){
+
+    const cartItems = document.getElementById("cartItems")
+    const empty = document.getElementById("emptyCart")
+
+    if(cart.length === 0){
+        cartItems.innerHTML = ""
+        empty.style.display = "block"
+        cartCount.textContent = "0"
+        return
+    }
+
+    empty.style.display = "none"
+    cartCount.textContent = cart.length
+
+    cartItems.innerHTML = cart.map((item,idx)=>`
+
+        <div class="cart-item">
+
+            <div class="cart-item-name">
+                <strong>${item.name}</strong>
+                <small>₹${item.price.toFixed(2)} / unit</small>
+            </div>
+
+            <div class="cart-item-qty">
+                <button class="btn btn-outline-secondary minus" data-index="${idx}">-</button>
+
+                <input type="number"
+                class="form-control qty"
+                value="${item.quantity}"
+                min="1"
+                max="${item.stock}"
+                data-index="${idx}">
+
+                <button class="btn btn-outline-secondary plus" data-index="${idx}">+</button>
+            </div>
+
+            <div class="cart-item-price">
+                ₹${(item.price * item.quantity).toFixed(2)}
+            </div>
+
+            <div class="cart-item-remove">
+                <button class="btn btn-danger remove" data-index="${idx}">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+        </div>
+
+    `).join("")
+
+    updateTotal()
+}
+
+
+function updateTotal(){
+
+    let subtotal = cart.reduce((s,i)=> s + (i.price * i.quantity), 0)
+    let tax = subtotal * 0.05
+    let total = subtotal + tax
+
+    subtotalSpan.textContent = "₹" + subtotal.toFixed(2)
+    taxSpan.textContent = "₹" + tax.toFixed(2)
+    totalSpan.textContent = "₹" + total.toFixed(2)
+
+}
+
+
+function addToCart(product){
+
+    const existing = cart.find(i=> i.id === product.id)
+
+    if(existing){
+
+        if(existing.quantity >= product.stock){
+            alert("Stock limit reached")
+            return
+        }
+
+        existing.quantity++
+
+    }else{
+
+        cart.push({...product, quantity:1})
+
+    }
+
+    renderCart()
+
+}
+
+
+document.addEventListener("click", function(e){
+
+    const plus = e.target.closest(".plus")
+    const minus = e.target.closest(".minus")
+    const remove = e.target.closest(".remove")
+
+    if(plus){
+
+        const i = plus.dataset.index
+        if(cart[i].quantity < cart[i].stock){
+            cart[i].quantity++
+            renderCart()
+        }
+
+    }
+
+    if(minus){
+
+        const i = minus.dataset.index
+        if(cart[i].quantity > 1){
+            cart[i].quantity--
+            renderCart()
+        }
+
+    }
+
+    if(remove){
+
+        const i = remove.dataset.index
+        cart.splice(i,1)
+        renderCart()
+
+    }
+
+})
+
+
+document.addEventListener("change", function(e){
+
+    if(e.target.classList.contains("qty")){
+
+        const i = e.target.dataset.index
+        const qty = parseInt(e.target.value)
+
+        if(qty > 0 && qty <= cart[i].stock){
+            cart[i].quantity = qty
+            renderCart()
+        }
+
+    }
+
+})
+
+
+async function searchProduct(){
+
+    const q = document.getElementById("productSearch").value
+
+    if(q.length < 2) return
+
+    const res = await fetch(`{{ url_for('sales.search_products') }}?q=${q}`)
+    const data = await res.json()
+
+    if(data.length > 0){
+
+        addToCart(data[0])
+        document.getElementById("productSearch").value = ""
+
+    }else{
+
+        alert("Product not found")
+
+    }
+
+}
+
+
+document.getElementById("searchBtn").onclick = searchProduct
+
+document.getElementById("productSearch").addEventListener("keypress", function(e){
+    if(e.key === "Enter") searchProduct()
+})
+
+
+document.getElementById("clearCartBtn").onclick = function(){
+
+    cart = []
+    renderCart()
+
+}
+
+
+document.getElementById("checkoutBtn").onclick = async ()=>{
+
+    if(cart.length === 0){
+        alert("Cart empty")
+        return
+    }
+
+    const res = await fetch("{{ url_for('sales.checkout') }}",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({items:cart})
+    })
+
+    const data = await res.json()
+
+    if(data.success){
+
+        alert("Order completed")
+
+        cart = []
+        renderCart()
+
+    }
+
+}
+
+renderCart()
+
+</script>
+
+{% endblock %}

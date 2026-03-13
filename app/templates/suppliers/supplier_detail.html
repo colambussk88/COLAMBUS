@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}{{ supplier.supplier_name }} - Pharmacy Management System{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('suppliers.suppliers_list') }}" class="btn btn-sm btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Suppliers
+    </a>
+</div>
+
+<h2 class="mb-4">{{ supplier.supplier_name }}</h2>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Supplier Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Contact Person</label>
+                        <p class="fw-bold">{{ supplier.contact_person or 'Not provided' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Phone</label>
+                        <p class="fw-bold">{{ supplier.phone }}</p>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Email</label>
+                        <p>{{ supplier.email or 'Not provided' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">GST Number</label>
+                        <p>{{ supplier.gst_number or 'Not provided' }}</p>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label class="form-label text-muted">Address</label>
+                        <p>{{ supplier.address or 'Not provided' }}</p>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Payment Terms</label>
+                        <p>{{ supplier.payment_terms or 'Not specified' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Status</label>
+                        <p>
+                            {% if supplier.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% if supplier.notes %}
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label class="form-label text-muted">Notes</label>
+                        <p>{{ supplier.notes }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Purchase Orders</h5>
+            </div>
+            {% if purchases %}
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>PO Number</th>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for purchase in purchases[:5] %}
+                        <tr>
+                            <td><strong>{{ purchase.purchase_number }}</strong></td>
+                            <td>{{ purchase.purchase_date.strftime('%Y-%m-%d') }}</td>
+                            <td>₹{{ "%.2f"|format(purchase.total_amount) }}</td>
+                            <td>
+                                {% if purchase.payment_status == 'paid' %}
+                                    <span class="badge bg-success">Paid</span>
+                                {% elif purchase.payment_status == 'partial' %}
+                                    <span class="badge bg-warning text-dark">Partial</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('purchases.purchase_detail', purchase_id=purchase.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="card-body text-muted">
+                No purchases from this supplier yet
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('suppliers.edit_supplier', supplier_id=supplier.id) }}" class="btn btn-primary w-100 mb-2">
+                    <i class="fas fa-edit"></i> Edit Supplier
+                </a>
+                <a href="{{ url_for('purchases.add_purchase') }}" class="btn btn-success w-100">
+                    <i class="fas fa-shopping-cart"></i> Create PO
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

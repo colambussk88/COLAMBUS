@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Product - Pharmacy Management System{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Edit Product</h2>
+
+<form method="POST" enctype="multipart/form-data">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-3">
+                <div class="card-header">Basic Information</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="product_name" class="form-label">Product Name *</label>
+                            <input type="text" class="form-control" id="product_name" name="product_name" required value="{{ product.product_name }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="generic_name" class="form-label">Generic Name</label>
+                            <input type="text" class="form-control" id="generic_name" name="generic_name" value="{{ product.generic_name }}">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="brand" class="form-label">Brand</label>
+                            <input type="text" class="form-control" id="brand" name="brand" value="{{ product.brand }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="category_id" class="form-label">Category *</label>
+                            <div class="input-group">
+                                <select class="form-select" id="category_id" name="category_id" required>
+                                    <option value="">-- Select Category --</option>
+                                    {% for c in categories %}
+                                    <option value="{{ c.id }}" {% if product.category_id==c.id %}selected{% endif %}>{{ c.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <a class="btn btn-outline-secondary" href="{{ url_for('master.categories_list') }}">Manage</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="manufacturer" class="form-label">Manufacturer</label>
+                            <input type="text" class="form-control" id="manufacturer" name="manufacturer" value="{{ product.manufacturer }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="batch_number" class="form-label">Batch Number</label>
+                            <input type="text" class="form-control" id="batch_number" name="batch_number" value="{{ product.batch_number }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card mb-3">
+                <div class="card-header">Inventory & Pricing</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="sku" class="form-label">SKU *</label>
+                            <input type="text" class="form-control" id="sku" name="sku" required value="{{ product.sku }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="barcode" class="form-label">Barcode</label>
+                            <input type="text" class="form-control" id="barcode" name="barcode" value="{{ product.barcode }}">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="purchase_price" class="form-label">Purchase Price *</label>
+                            <input type="number" class="form-control" id="purchase_price" name="purchase_price" step="0.01" required value="{{ product.purchase_price }}">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="selling_price" class="form-label">Selling Price *</label>
+                            <input type="number" class="form-control" id="selling_price" name="selling_price" step="0.01" required value="{{ product.selling_price }}">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="mrp" class="form-label">MRP *</label>
+                            <input type="number" class="form-control" id="mrp" name="mrp" step="0.01" required value="{{ product.mrp }}">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="tax_percentage" class="form-label">Tax %</label>
+                            <input type="number" class="form-control" id="tax_percentage" name="tax_percentage" step="0.01" value="{{ product.tax_percentage }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="quantity" class="form-label">Quantity *</label>
+                            <input type="number" class="form-control" id="quantity" name="quantity" required value="{{ product.quantity }}">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="minimum_stock_level" class="form-label">Minimum Stock Level</label>
+                            <input type="number" class="form-control" id="minimum_stock_level" name="minimum_stock_level" value="{{ product.minimum_stock_level }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="reorder_level" class="form-label">Reorder Level</label>
+                            <input type="number" class="form-control" id="reorder_level" name="reorder_level" value="{{ product.reorder_level }}">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="unit_id" class="form-label">Unit</label>
+                            <div class="input-group">
+                                <select class="form-select" id="unit_id" name="unit_id">
+                                    <option value="">-- Select Unit --</option>
+                                    {% for u in units %}
+                                    <option value="{{ u.id }}" {% if product.unit_id==u.id %}selected{% endif %}>{{ u.name }}{% if u.abbreviation %} ({{ u.abbreviation }}){% endif %}</option>
+                                    {% endfor %}
+                                </select>
+                                <a class="btn btn-outline-secondary" href="{{ url_for('master.units_list') }}">Manage</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card mb-3">
+                <div class="card-header">Dates & More</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="manufacturing_date" class="form-label">Manufacturing Date</label>
+                            <input type="date" class="form-control" id="manufacturing_date" name="manufacturing_date" value="{{ product.manufacturing_date.strftime('%Y-%m-%d') if product.manufacturing_date else '' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="expiry_date" class="form-label">Expiry Date</label>
+                            <input type="date" class="form-control" id="expiry_date" name="expiry_date" value="{{ product.expiry_date.strftime('%Y-%m-%d') if product.expiry_date else '' }}">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="prescription_required" name="prescription_required" {% if product.prescription_required %}checked{% endif %}>
+                            <label class="form-check-label" for="prescription_required">Prescription Required</label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3">{{ product.description }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">Product Image</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <input type="file" class="form-control" id="product_image" name="product_image" accept="image/*">
+                        <small class="text-muted">PNG, JPG, JPEG, GIF (Max 16MB)</small>
+                    </div>
+                    <div id="imagePreview" class="text-center">
+                        {% if product.image_path %}
+                        <img src="/{{ url_for('static', filename=product.image_path) }}" style="max-width:100%">
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="card mt-3">
+                <div class="card-header">Actions</div>
+                <div class="card-body">
+                    <button type="submit" class="btn btn-primary w-100 mb-2">Save Changes</button>
+                    <a href="{{ url_for('inventory.products_list') }}" class="btn btn-secondary w-100">Cancel</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}

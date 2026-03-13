@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Purchase Report - Pharmacy Management System{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-shopping-cart"></i> Purchase Report</h2>
+
+    <a href="{{ url_for('reports.purchase_report',
+        start_date=start_date,
+        end_date=end_date,
+        supplier_id=supplier_id,
+        export='csv') }}"
+       class="btn btn-success">
+
+        <i class="fas fa-download"></i> Export to CSV
+    </a>
+</div>
+
+
+<!-- FILTER -->
+<div class="card mb-4">
+<div class="card-body">
+
+<form method="GET" class="row g-3">
+
+<div class="col-md-3">
+<label class="form-label">From Date</label>
+<input type="date"
+       name="start_date"
+       class="form-control"
+       value="{{ start_date if start_date else '' }}">
+</div>
+
+<div class="col-md-3">
+<label class="form-label">To Date</label>
+<input type="date"
+       name="end_date"
+       class="form-control"
+       value="{{ end_date if end_date else '' }}">
+</div>
+
+<div class="col-md-4">
+<label class="form-label">Supplier</label>
+
+<select name="supplier_id" class="form-select">
+
+<option value="">All Suppliers</option>
+
+{% for supplier in suppliers %}
+
+<option value="{{ supplier.id }}"
+{% if supplier_id and supplier.id == supplier_id %}selected{% endif %}>
+
+{{ supplier.supplier_name }}
+
+</option>
+
+{% endfor %}
+
+</select>
+
+</div>
+
+<div class="col-md-2 d-flex align-items-end">
+
+<button class="btn btn-primary w-100">
+<i class="fas fa-filter"></i> Filter
+</button>
+
+</div>
+
+</form>
+
+</div>
+</div>
+
+
+
+<!-- PURCHASE TABLE -->
+<div class="card">
+
+<div class="table-responsive">
+
+<table class="table table-hover align-middle mb-0">
+
+<thead class="table-light">
+
+<tr>
+<th>PO Number</th>
+<th>Date</th>
+<th>Supplier</th>
+
+<th class="text-end">Subtotal</th>
+<th class="text-end">Tax</th>
+<th class="text-end">Discount</th>
+<th class="text-end">Total</th>
+
+<th>Payment Status</th>
+<th>Actions</th>
+</tr>
+
+</thead>
+
+
+<tbody>
+
+{% for purchase in purchases %}
+
+<tr>
+
+<td>
+<a href="{{ url_for('purchases.purchase_detail', purchase_id=purchase.id) }}">
+{{ purchase.purchase_number }}
+</a>
+</td>
+
+<td>
+{{ purchase.purchase_date.strftime('%Y-%m-%d') if purchase.purchase_date }}
+</td>
+
+<td>
+{{ purchase.supplier.supplier_name }}
+</td>
+
+<td class="text-end">
+₹{{ "%.2f"|format(purchase.subtotal) }}
+</td>
+
+<td class="text-end">
+₹{{ "%.2f"|format(purchase.tax_amount) }}
+</td>
+
+<td class="text-end">
+₹{{ "%.2f"|format(purchase.discount_amount) }}
+</td>
+
+<td class="text-end fw-bold">
+₹{{ "%.2f"|format(purchase.total_amount) }}
+</td>
+
+<td>
+
+{% if purchase.payment_status == 'paid' %}
+<span class="badge bg-success">Paid</span>
+
+{% elif purchase.payment_status == 'partial' %}
+<span class="badge bg-warning text-dark">Partial</span>
+
+{% else %}
+<span class="badge bg-danger">Pending</span>
+{% endif %}
+
+</td>
+
+<td>
+
+<a href="{{ url_for('purchases.purchase_detail', purchase_id=purchase.id) }}"
+   class="btn btn-sm btn-outline-primary">
+
+<i class="fas fa-eye"></i> View
+
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+
+
+{% if purchases %}
+
+<tr class="table-light fw-bold border-top">
+
+<td colspan="3">
+TOTAL
+</td>
+
+<td class="text-end">
+₹{{ "%.2f"|format(total_subtotal) }}
+</td>
+
+<td class="text-end">
+₹{{ "%.2f"|format(total_tax) }}
+</td>
+
+<td class="text-end">
+₹{{ "%.2f"|format(total_discount) }}
+</td>
+
+<td class="text-end text-success">
+₹{{ "%.2f"|format(total_purchase) }}
+</td>
+
+<td colspan="2"></td>
+
+</tr>
+
+{% else %}
+
+<tr>
+
+<td colspan="9" class="text-center text-muted py-4">
+
+<i class="fas fa-inbox"
+style="font-size:3rem; opacity:0.3;"></i>
+
+<br>
+
+No purchases found for the selected period
+
+</td>
+
+</tr>
+
+{% endif %}
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+{% endblock %}

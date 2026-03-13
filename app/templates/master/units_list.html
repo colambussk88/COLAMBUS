@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Units - Master{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Units</h2>
+<a href="{{ url_for('master.add_unit') }}" class="btn btn-primary mb-3">Add Unit</a>
+<div class="card">
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr><th>Name</th><th>Abbreviation</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                {% for u in units %}
+                <tr>
+                    <td>{{ u.name }}</td>
+                    <td>{{ u.abbreviation }}</td>
+                    <td>
+                        <a class="btn btn-sm btn-secondary" href="{{ url_for('master.edit_unit', unit_id=u.id) }}">Edit</a>
+                        <form action="{{ url_for('master.delete_unit', unit_id=u.id) }}" method="post" style="display:inline">
+                            <button class="btn btn-sm btn-danger" type="submit">Disable</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

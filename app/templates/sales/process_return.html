@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Process Return - Sales Return Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1><i class="fas fa-undo"></i> Process Return</h1>
+            <p class="text-muted">Invoice: {{ sale.invoice_number }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('sales.invoice_detail', sale_id=sale.id) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Invoice
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Original Invoice Details -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Original Invoice Details</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Invoice Date:</strong><br>
+                            {{ sale.invoice_date.strftime('%Y-%m-%d %H:%M') if sale.invoice_date else '' }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Customer:</strong><br>
+                            {{ sale.customer_name or 'Walk-in' }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Total Amount:</strong><br>
+                            ₹{{ "%.2f"|format(sale.total_amount) }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Payment Method:</strong><br>
+                            {{ sale.payment_method.upper() }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Invoice Items -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Invoice Items Available for Return</h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Product</th>
+                                <th class="text-end">Qty</th>
+                                <th class="text-end">Unit Price</th>
+                                <th class="text-end">Discount</th>
+                                <th class="text-end">Tax</th>
+                                <th class="text-end">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in sale.items %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.product.product_name }}</strong><br>
+                                    <small class="text-muted">Batch: {{ item.batch_number or 'N/A' }}</small>
+                                </td>
+                                <td class="text-end">{{ item.quantity }}</td>
+                                <td class="text-end">₹{{ "%.2f"|format(item.unit_price) }}</td>
+                                <td class="text-end">₹{{ "%.2f"|format(item.discount_amount) }}</td>
+                                <td class="text-end">₹{{ "%.2f"|format(item.tax_amount) }}</td>
+                                <td class="text-end"><strong>₹{{ "%.2f"|format(item.total_amount) }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Return Form -->
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Return Details</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        <!-- Return Type -->
+                        <div class="mb-4">
+                            <label class="form-label"><strong>Return Type</strong></label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="return_type" id="fullReturn" value="full" checked>
+                                <label class="form-check-label" for="fullReturn">
+                                    <strong>Full Return</strong> - Return all items
+                                </label>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="return_type" id="partialReturn" value="partial">
+                                <label class="form-check-label" for="partialReturn">
+                                    <strong>Partial Return</strong> - Return specific items
+                                </label>
+                            </div>
+
+                            <!-- Partial Return Options -->
+                            <div id="partialReturnOptions" style="display: none; padding: 15px; background-color: #f8f9fa; border-radius: 4px; margin-top: 15px;">
+                                <div class="mb-3">
+                                    <label for="productId" class="form-label">Select Product</label>
+                                    <select id="productId" name="product_id" class="form-select">
+                                        <option value="">-- Choose Product --</option>
+                                        {% for item in sale.items %}
+                                        <option value="{{ item.product_id }}">
+                                            {{ item.product.product_name }} (Available: {{ item.quantity }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="quantity" class="form-label">Quantity to Return</label>
+                                    <input type="number" id="quantity" name="quantity" class="form-control" min="1" placeholder="Enter quantity">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Return Reason -->
+                        <div class="mb-3">
+                            <label for="returnReason" class="form-label"><strong>Reason for Return</strong></label>
+                            <select id="returnReason" name="return_reason" class="form-select" required>
+                                <option value="">-- Select Reason --</option>
+                                <option value="defective">Defective Product</option>
+                                <option value="damaged">Damaged</option>
+                                <option value="wrong_item">Wrong Item Received</option>
+                                <option value="expired">Expired</option>
+                                <option value="not_needed">Not Needed</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <!-- Refund Mode -->
+                        <div class="mb-4">
+                            <label for="refundMode" class="form-label"><strong>Refund Mode</strong></label>
+                            <select id="refundMode" name="refund_mode" class="form-select" required>
+                                <option value="cash">Cash</option>
+                                <option value="card">Card Reversal</option>
+                                <option value="upi">UPI Reversal</option>
+                                <option value="bank">Bank Transfer</option>
+                                <option value="credit_note">Credit Note</option>
+                            </select>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-check"></i> Process Return
+                            </button>
+                            <a href="{{ url_for('sales.invoice_detail', sale_id=sale.id) }}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Sidebar -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Return Summary</h6>
+                </div>
+                <div class="card-body">
+                    <div id="returnSummary">
+                        <div class="alert alert-info">
+                            <small>Select return type to see estimated refund amount</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Important Notes -->
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="fas fa-info-circle"></i> Important Notes</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="small">
+                        <li>Returning items will reverse stock movements</li>
+                        <li>Customer balance will be updated accordingly</li>
+                        <li>A credit note will be generated for records</li>
+                        <li>Refund will be processed as per selected mode</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fullReturnRadio = document.getElementById('fullReturn');
+    const partialReturnRadio = document.getElementById('partialReturn');
+    const partialReturnOptions = document.getElementById('partialReturnOptions');
+    const returnSummary = document.getElementById('returnSummary');
+    
+    function updateReturnType() {
+        if (partialReturnRadio.checked) {
+            partialReturnOptions.style.display = 'block';
+        } else {
+            partialReturnOptions.style.display = 'none';
+        }
+        updateSummary();
+    }
+    
+    function updateSummary() {
+        if (fullReturnRadio.checked) {
+            returnSummary.innerHTML = `
+                <div class="alert alert-success">
+                    <strong>Full Return</strong><br>
+                    Refund Amount: <strong>₹{{ "%.2f"|format(sale.total_amount) }}</strong>
+                </div>
+            `;
+        } else {
+            const qty = document.getElementById('quantity').value || 0;
+            const productSelect = document.getElementById('productId');
+            if (qty > 0 && productSelect.value) {
+                returnSummary.innerHTML = `
+                    <div class="alert alert-info">
+                        <small>Select product and quantity to calculate refund</small>
+                    </div>
+                `;
+            }
+        }
+    }
+    
+    fullReturnRadio.addEventListener('change', updateReturnType);
+    partialReturnRadio.addEventListener('change', updateReturnType);
+    document.getElementById('quantity').addEventListener('change', updateSummary);
+    document.getElementById('productId').addEventListener('change', updateSummary);
+});
+</script>
+{% endblock %}

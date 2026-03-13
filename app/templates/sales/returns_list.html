@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Sales Returns - Pharmacy Management System{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Improve table alignment */
+.returns-table td,
+.returns-table th{
+    vertical-align: middle;
+}
+
+/* Prevent wrapping */
+.nowrap{
+    white-space: nowrap;
+}
+
+/* Reason column limit */
+.reason-text{
+    max-width:200px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+/* Credit note style */
+.credit-note{
+    font-weight:600;
+    color:#1a472a;
+}
+
+/* Refund amount highlight */
+.refund-amount{
+    font-weight:600;
+    color:#dc3545;
+}
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="container-fluid py-4">
+
+<div class="row mb-4">
+<div class="col-md-8">
+<h1><i class="fas fa-undo"></i> Sales Returns</h1>
+</div>
+
+<div class="col-md-4 text-end">
+<a href="{{ url_for('sales.invoices_list') }}" class="btn btn-primary">
+<i class="fas fa-receipt"></i> View Invoices
+</a>
+</div>
+</div>
+
+
+<!-- Returns Table -->
+<div class="card shadow-sm">
+
+<div class="table-responsive">
+
+<table class="table table-hover mb-0 returns-table">
+
+<thead class="table-light">
+<tr>
+
+<th class="nowrap">Credit Note #</th>
+<th class="nowrap">Original Invoice</th>
+<th class="nowrap">Return Date</th>
+<th class="nowrap text-center">Return Type</th>
+<th class="text-center">Qty</th>
+<th class="text-end">Refund</th>
+<th class="text-center">Mode</th>
+<th>Reason</th>
+<th class="text-center">Actions</th>
+
+</tr>
+</thead>
+
+
+<tbody>
+
+{% if returns %}
+
+{% for return in returns %}
+
+<tr>
+
+<td class="credit-note nowrap">
+{{ return.credit_note_number }}
+</td>
+
+<td class="nowrap">
+<a href="{{ url_for('sales.invoice_detail', sale_id=return.sale_id) }}">
+{{ return.sale.invoice_number }}
+</a>
+</td>
+
+<td class="nowrap">
+{{ return.return_date.strftime('%Y-%m-%d %H:%M') }}
+</td>
+
+<td class="text-center">
+
+<span class="badge 
+{% if return.is_full_return %}
+bg-danger
+{% else %}
+bg-warning text-dark
+{% endif %}
+">
+
+{{ 'Full Return' if return.is_full_return else 'Partial Return' }}
+
+</span>
+
+</td>
+
+<td class="text-center">
+{{ return.quantity }}
+</td>
+
+<td class="text-end refund-amount">
+₹{{ "%.2f"|format(return.refund_amount) }}
+</td>
+
+<td class="text-center">
+<span class="badge bg-secondary">
+{{ return.refund_mode.upper() }}
+</span>
+</td>
+
+<td>
+<span class="reason-text" title="{{ return.reason }}">
+{{ return.reason }}
+</span>
+</td>
+
+<td class="text-center">
+
+<div class="btn-group btn-group-sm">
+
+<a href="{{ url_for('sales.invoice_detail', sale_id=return.sale_id) }}"
+class="btn btn-outline-primary"
+title="View Invoice">
+
+<i class="fas fa-eye"></i>
+
+</a>
+
+</div>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+{% else %}
+
+<tr>
+<td colspan="9" class="text-center py-4 text-muted">
+No returns yet.
+</td>
+</tr>
+
+{% endif %}
+
+</tbody>
+
+</table>
+
+</div>
+</div>
+
+
+
+<!-- Statistics -->
+{% if returns %}
+
+<div class="row mt-4">
+
+<div class="col-md-3">
+<div class="card text-center shadow-sm">
+<div class="card-body">
+<h6 class="text-muted">Total Returns</h6>
+<h3>{{ returns|length }}</h3>
+</div>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="card text-center shadow-sm">
+<div class="card-body">
+<h6 class="text-muted">Full Returns</h6>
+<h3>{{ returns|selectattr('is_full_return','equalto',True)|list|length }}</h3>
+</div>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="card text-center shadow-sm">
+<div class="card-body">
+<h6 class="text-muted">Partial Returns</h6>
+<h3>{{ returns|selectattr('is_full_return','equalto',False)|list|length }}</h3>
+</div>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="card text-center shadow-sm">
+<div class="card-body">
+<h6 class="text-muted">Total Refunded</h6>
+<h3>₹{{ "%.0f"|format(returns|map(attribute='refund_amount')|sum) }}</h3>
+</div>
+</div>
+</div>
+
+</div>
+
+{% endif %}
+
+</div>
+{% endblock %}

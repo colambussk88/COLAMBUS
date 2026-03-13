@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Customer - Pharmacy Management System{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('customers.customer_detail', customer_id=customer.id) }}" class="btn btn-sm btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Customer
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Edit Customer</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('customers.edit_customer', customer_id=customer.id) }}">
+                    <div class="mb-3">
+                        <label for="customerName" class="form-label">Customer Name *</label>
+                        <input type="text" class="form-control" id="customerName" name="customer_name" value="{{ customer.customer_name }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Phone Number *</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" value="{{ customer.phone }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ customer.email or '' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Address</label>
+                        <textarea class="form-control" id="address" name="address" rows="3">{{ customer.address or '' }}</textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="gstNumber" class="form-label">GST Number</label>
+                                <input type="text" class="form-control" id="gstNumber" name="gst_number" value="{{ customer.gst_number or '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="creditLimit" class="form-label">Credit Limit</label>
+                                <input type="number" class="form-control" id="creditLimit" name="credit_limit" step="0.01" value="{{ customer.credit_limit }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Update Customer
+                        </button>
+                        <a href="{{ url_for('customers.customer_detail', customer_id=customer.id) }}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

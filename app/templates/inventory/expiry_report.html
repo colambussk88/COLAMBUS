@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Expiry Report - Pharmacy Management System{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">
+    <i class="fas fa-hourglass-end"></i> Expiry Report
+</h2>
+
+{% if products_info %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Products Expiring / Expired</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Product Name</th>
+                        <th>SKU</th>
+                        <th>Batch Number</th>
+                        <th>Expiry Date</th>
+                        <th>Days Remaining</th>
+                        <th>Current Stock</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in products_info %}
+                    {% set product = item.product %}
+                    {% set days_left = item.days_left %}
+                    <tr>
+                        <td>
+                            <strong>{{ product.product_name }}</strong><br>
+                            <small class="text-muted">{{ product.generic_name or '' }}</small>
+                        </td>
+                        <td>{{ product.sku }}</td>
+                        <td>{{ product.batch_number or 'N/A' }}</td>
+                        <td>{{ item.expiry_date.strftime('%Y-%m-%d') if item.expiry_date else 'N/A' }}</td>
+                        <td>
+                            {% if days_left is not none and days_left > 0 %}
+                            <strong>{{ days_left }} days</strong>
+                            {% else %}
+                            <span class="badge bg-danger">EXPIRED</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ product.quantity }}</td>
+                        <td>
+                            {% if days_left is not none and days_left <= 0 %}
+                            <span class="badge bg-danger">Expired</span>
+                            {% elif days_left is not none and days_left <= 7 %}
+                            <span class="badge bg-danger">Critical</span>
+                            {% elif days_left is not none and days_left <= 30 %}
+                            <span class="badge bg-warning">Warning</span>
+                            {% else %}
+                            <span class="badge bg-info">Monitored</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('inventory.product_detail', product_id=product.id) }}" class="btn btn-sm btn-info">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-success">
+    <i class="fas fa-check-circle"></i> No products found for the selected expiry filter.
+</div>
+{% endif %}
+{% endblock %}

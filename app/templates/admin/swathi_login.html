@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Hidden Admin Login{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card mt-5">
+                <div class="card-header">Hidden Admin Access</div>
+                <div class="card-body">
+                    <p class="text-muted">Enter the hidden admin credentials.</p>
+                    <form method="post">
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input name="username" class="form-control" value="Swathi" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input name="password" class="form-control" type="password" value="Swathi@1301" required>
+                        </div>
+                        <button class="btn btn-primary" type="submit">Login</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

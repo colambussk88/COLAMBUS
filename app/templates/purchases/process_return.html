@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Process Purchase Return{% endblock %}
+
+{% block content %}
+
+<div class="mb-4">
+<a href="{{ url_for('purchases.purchase_detail', purchase_id=purchase.id) }}" class="btn btn-secondary btn-sm">
+<i class="fas fa-arrow-left"></i> Back
+</a>
+</div>
+
+<h3 class="mb-4">Return Items - {{ purchase.purchase_number }}</h3>
+
+<div class="row">
+
+<div class="col-lg-8">
+
+<div class="card">
+<div class="card-header">
+<h5 class="mb-0">Return Product</h5>
+</div>
+
+<div class="card-body">
+
+<form method="POST">
+
+<div class="mb-3">
+<label class="form-label">Product</label>
+<select name="product_id" class="form-select" required>
+
+{% for item in purchase.items %}
+<option value="{{ item.product.id }}">
+{{ item.product.product_name }} | Batch: {{ item.batch_number }} | Qty: {{ item.quantity }}
+</option>
+{% endfor %}
+
+</select>
+</div>
+
+
+<div class="mb-3">
+<label class="form-label">Batch Number</label>
+<select name="batch_number" class="form-select">
+
+{% for item in purchase.items %}
+<option value="{{ item.batch_number }}">
+{{ item.batch_number }}
+</option>
+{% endfor %}
+
+</select>
+</div>
+
+
+<div class="mb-3">
+<label class="form-label">Return Quantity</label>
+<input type="number" name="quantity" class="form-control" min="1" required>
+</div>
+
+
+<div class="mb-3">
+<label class="form-label">Reason</label>
+<textarea name="reason" class="form-control" rows="3"></textarea>
+</div>
+
+<button type="submit" class="btn btn-danger">
+<i class="fas fa-undo"></i> Process Return
+</button>
+
+</form>
+
+</div>
+</div>
+
+</div>
+
+
+
+<div class="col-lg-4">
+
+<div class="card">
+<div class="card-header">
+<h5 class="mb-0">Purchase Info</h5>
+</div>
+
+<div class="card-body">
+
+<p><strong>Supplier:</strong><br>
+{{ purchase.supplier.supplier_name }}</p>
+
+<p><strong>Date:</strong><br>
+{{ purchase.purchase_date.strftime('%Y-%m-%d') }}</p>
+
+<p><strong>Total Amount:</strong><br>
+₹{{ "%.2f"|format(purchase.total_amount) }}</p>
+
+<p><strong>Status:</strong><br>
+
+{% if purchase.payment_status == 'paid' %}
+<span class="badge bg-success">Paid</span>
+{% else %}
+<span class="badge bg-danger">Pending</span>
+{% endif %}
+
+</p>
+
+</div>
+</div>
+
+</div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Pharmacy Management System{% endblock %}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+:root {
+  --primary-color: #1a472a;
+  --secondary-color: #2d5c3f;
+  --danger-color: #dc3545;
+  --success-color: #28a745;
+  --warning-color: #ffc107;
+  --info-color: #17a2b8;
+
+  /* Light theme */
+  --bg-color: #f5f7fa;
+  --text-color: #333;
+  --card-bg: #ffffff;
+  --sidebar-bg: #ffffff;
+}
+
+/* Dark theme */
+[data-theme="dark"] {
+  --bg-color: #121212;
+  --text-color: #ffffff;
+  --card-bg: #1f1f1f;
+  --sidebar-bg: #1a1a1a;
+}
+
+/* Base */
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--bg-color);
+  color: var(--text-color);
+}
+
+/* Navbar */
+.navbar{
+  background: linear-gradient(135deg,var(--primary-color),var(--secondary-color));
+  box-shadow:0 2px 6px rgba(0,0,0,0.15);
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height: 80px;
+  z-index:1000;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 25px;
+}
+
+.navbar-brand {
+  font-weight:600;
+  font-size:1.3rem;
+}
+
+/* Right navbar container */
+.navbar-right{
+  display:flex;
+  align-items:center;
+  gap:15px;
+}
+
+/* Icon buttons */
+.nav-icon{
+  width:38px;
+  height:38px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:8px;
+  color:#fff;
+  font-size:18px;
+  cursor:pointer;
+  position:relative;
+  transition:all 0.25s ease;
+}
+/* Hover effect */
+.nav-icon:hover{
+  background:rgba(255,255,255,0.15);
+  transform:translateY(-1px);
+}
+/* Fix navbar links */
+.navbar a{
+  color:white !important;
+  text-decoration:none;
+}
+
+/* Remove bootstrap underline */
+.navbar a:hover{
+  color:white;
+  text-decoration:none;
+}
+
+/* Fix theme toggle button */
+#themeToggle{
+  border:none;
+  background:rgba(255,255,255,0.15);
+  width:38px;
+  height:38px;
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:18px;
+  cursor:pointer;
+}
+
+/* Navbar dropdown alignment */
+.navbar .dropdown-toggle{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+/* Fix bell icon */
+.navbar .fa-bell{
+  color:white;
+}
+/* Notification badge */
+.notification-badge{
+  position:absolute;
+  top:-4px;
+  right:-6px;
+  background:#ff4757;
+  color:white;
+  font-size:10px;
+  padding:3px 6px;
+  border-radius:50%;
+}
+/* User menu */
+.user-menu-navbar{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:white;
+  font-weight:500;
+  cursor:pointer;
+  padding:6px 10px;
+  border-radius:8px;
+  transition:all 0.25s ease;
+}
+.user-menu-navbar:hover{
+  background:rgba(255,255,255,0.15);
+}
+/* Sidebar */
+.sidebar {
+  background: var(--sidebar-bg);
+  box-shadow:0 2px 4px rgba(0,0,0,0.1);
+  position:fixed;
+  top:80px;
+  left:0;
+  bottom:0;
+  width:260px;
+  overflow-y:auto;
+}
+
+.sidebar .nav-link {
+  color:var(--text-color);
+  padding:12px 20px;
+  border-left:3px solid transparent;
+  transition:.3s;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+  background:#f8f9fa;
+  border-left-color:var(--primary-color);
+  color:var(--primary-color);
+}
+
+.sidebar .nav-section-title {
+  font-size:.8rem;
+  font-weight:600;
+  color:#999;
+  text-transform:uppercase;
+  padding:15px 20px 10px;
+}
+
+/* Main Content */
+.main-content {
+  margin-left:260px;
+  margin-top:80px;
+  padding:30px;
+}
+
+.auth-page {
+  margin-top:100px;
+  max-width:1100px;
+  margin-left:auto;
+  margin-right:auto;
+}
+/* Cards */
+.card,
+.stat-card {
+  background:var(--card-bg);
+  color:var(--text-color);
+  border:none;
+  border-radius:12px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+
+.card-header {
+  background:linear-gradient(135deg,var(--primary-color),var(--secondary-color));
+  color:#fff;
+  border:none;
+  font-weight:600;
+}
+
+/* Stat cards */
+.stat-card {
+  text-align:center;
+  padding:25px;
+  transition:.3s;
+}
+
+.stat-card:hover {
+  transform:translateY(-5px);
+  box-shadow:0 8px 16px rgba(0,0,0,0.12);
+}
+
+.stat-card .stat-value {
+  font-size:2.5rem;
+  font-weight:700;
+  color:var(--primary-color);
+}
+
+.stat-card .stat-label {
+  font-size:.9rem;
+}
+
+/* Forms */
+.form-label {
+  font-weight:500;
+}
+
+.form-control,
+.form-select {
+  border:1px solid #ddd;
+  border-radius:6px;
+  padding:10px 12px;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color:var(--primary-color);
+  box-shadow:0 0 0 .2rem rgba(26,71,42,.25);
+}
+
+/* Buttons */
+.btn-primary {
+  background:var(--primary-color);
+  border-color:var(--primary-color);
+}
+
+.btn-primary:hover {
+  background:var(--secondary-color);
+  border-color:var(--secondary-color);
+}
+
+.btn-sm {
+  padding:6px 12px;
+  font-size:.85rem;
+}
+
+/* Footer */
+.footer {
+  background:linear-gradient(135deg,var(--primary-color),var(--secondary-color));
+  color:#fff;
+  padding:15px 20px;
+  margin-top:40px;
+  border-radius:8px;
+  font-size:.9rem;
+}
+
+.footer a {
+  color:#fff;
+  text-decoration:none;
+}
+
+.footer a:hover {
+  text-decoration:underline;
+}
+.dropdown-menu{
+  min-width:200px;
+}
+
+.dropdown-menu .dropdown-item{
+  color:#333 !important;
+}
+/* Responsive */
+@media (max-width:768px) {
+  .sidebar {
+    width:100%;
+    position:relative;
+    top:0;
+    max-height:300px;
+  }
+
+  .main-content {
+    margin-left:0;
+  }
+}
+</style>
+    {% block extra_css %}{% endblock %}
+  </head>
+  <body>
+    <!-- Navigation -->
+   <nav class="navbar">
+
+  <a class="navbar-brand" href="{{ url_for('dashboard.dashboard') }}">
+    <i class="fas fa-pills"></i> PharmaCare
+  </a>
+
+  <div class="navbar-right">
+
+    <!-- Alerts -->
+    <div class="nav-icon dropdown">
+      <a href="#" data-bs-toggle="dropdown">
+        <i class="fas fa-bell"></i>
+        <span id="alert-badge" class="notification-badge">3</span>
+      </a>
+
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li>
+          <a class="dropdown-item" href="{{ url_for('alerts.alerts') }}">
+            View all alerts
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Theme toggle -->
+    <button id="themeToggle" class="nav-icon">
+      🌙
+    </button>
+
+    <!-- User dropdown -->
+    <div class="user-menu-navbar dropdown">
+      <a href="#" data-bs-toggle="dropdown">
+        <i class="fas fa-user-circle"></i>
+        {{ current_user.username }}
+        <i class="fas fa-chevron-down"></i>
+      </a>
+
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li>
+          <a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+            My Profile
+          </a>
+        </li>
+        <li>
+          <a class="dropdown-item" href="{{ url_for('auth.change_password') }}">
+            Change Password
+          </a>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+          <a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+            Logout
+          </a>
+        </li>
+      </ul>
+    </div>
+
+  </div>
+
+</nav>
+    <!-- Sidebar (only for authenticated users) -->
+    {% if current_user.is_authenticated %}
+    <div class="sidebar">
+      <nav class="nav flex-column">
+        {% if current_user.company and current_user.company.company_name ==
+        'Platform Admin' %}
+        <div class="nav-section-title">Admin</div>
+        <a
+          class="nav-link {% if 'admin/companies' in request.path %}active{% endif %}"
+          href="{{ url_for('admin.companies_list') }}"
+        >
+          <i class="fas fa-building"></i> Companies
+        </a>
+        <a class="nav-link" href="{{ url_for('auth.profile') }}">
+          <i class="fas fa-cog"></i> Settings
+        </a>
+        {% else %}
+        <div class="nav-section-title">Dashboard</div>
+        <a
+          class="nav-link {% if request.endpoint == 'dashboard.dashboard' %}active{% endif %}"
+          href="{{ url_for('dashboard.dashboard') }}"
+        >
+          <i class="fas fa-chart-line"></i> Dashboard
+        </a>
+
+        <div class="nav-section-title">Inventory</div>
+        <a
+          class="nav-link {% if 'inventory' in request.path %}active{% endif %}"
+          href="{{ url_for('inventory.products_list') }}"
+        >
+          <i class="fas fa-boxes"></i> Products
+        </a>
+        <a
+          class="nav-link {% if request.endpoint == 'inventory.low_stock_report' %}active{% endif %}"
+          href="{{ url_for('inventory.low_stock_report') }}"
+        >
+          <i class="fas fa-exclamation-triangle"></i> Low Stock
+        </a>
+        <a
+          class="nav-link {% if request.endpoint == 'inventory.expiry_report' %}active{% endif %}"
+          href="{{ url_for('inventory.expiry_report') }}"
+        >
+          <i class="fas fa-hourglass-end"></i> Expiry
+        </a>
+
+        <div class="nav-section-title">Sales & POS</div>
+        <a
+          class="nav-link {% if request.endpoint == 'sales.pos' %}active{% endif %}"
+          href="{{ url_for('sales.pos') }}"
+        >
+          <i class="fas fa-cash-register"></i> POS
+        </a>
+        <a
+          class="nav-link {% if 'invoices' in request.path %}active{% endif %}"
+          href="{{ url_for('sales.invoices_list') }}"
+        >
+          <i class="fas fa-receipt"></i> Invoices
+        </a>
+        <a
+          class="nav-link {% if request.endpoint == 'sales.sales_returns_list' %}active{% endif %}"
+          href="{{ url_for('sales.sales_returns_list') }}"
+        >
+          <i class="fas fa-undo"></i> Sales Returns
+        </a>
+
+        <div class="nav-section-title">Purchases</div>
+        <a
+          class="nav-link {% if 'purchases' in request.path %}active{% endif %}"
+          href="{{ url_for('purchases.purchases_list') }}"
+        >
+          <i class="fas fa-shopping-cart"></i> Purchases
+        </a>
+        <li>
+          <a
+            class="nav-link {% if 'returns' in request.path %}active{% endif %}"
+            href="{{ url_for('purchases.returns_list') }}"
+          >
+            <i class="fas fa-undo"></i> Purchase Returns
+          </a>
+        </li>
+
+        <div class="nav-section-title">Management</div>
+        <a
+          class="nav-link {% if 'doctors' in request.path %}active{% endif %}"
+          href="{{ url_for('doctors.doctors_list') }}"
+        >
+          <i class="fas fa-user-md"></i> Doctors
+        </a>
+        {% if current_user.role == 'owner' %}
+        <a
+          class="nav-link {% if 'users' in request.path %}active{% endif %}"
+          href="{{ url_for('users.users_list') }}"
+        >
+          <i class="fas fa-user-cog"></i> User Management
+        </a>
+        {% endif %}
+        <a
+          class="nav-link {% if 'customers' in request.path %}active{% endif %}"
+          href="{{ url_for('customers.customers_list') }}"
+        >
+          <i class="fas fa-users"></i> Customers
+        </a>
+        <a
+          class="nav-link {% if 'suppliers' in request.path %}active{% endif %}"
+          href="{{ url_for('suppliers.suppliers_list') }}"
+        >
+          <i class="fas fa-truck"></i> Suppliers
+        </a>
+
+        <div class="nav-section-title">Finance</div>
+        <a
+          class="nav-link {% if 'accounting' in request.path %}active{% endif %}"
+          href="{{ url_for('accounting.accounting_dashboard') }}"
+        >
+          <i class="fas fa-calculator"></i> Accounting
+        </a>
+        <a
+          class="nav-link {% if 'reports' in request.path %}active{% endif %}"
+          href="{{ url_for('reports.reports_home') }}"
+        >
+          <i class="fas fa-file-alt"></i> Reports
+        </a>
+
+        <div class="nav-section-title">System</div>
+        <a
+          class="nav-link {% if request.endpoint == 'alerts.alerts' %}active{% endif %}"
+          href="{{ url_for('alerts.alerts') }}"
+        >
+          <i class="fas fa-bell"></i> Alerts
+        </a>
+        <a class="nav-link" href="{{ url_for('auth.profile') }}">
+          <i class="fas fa-cog"></i> Settings
+        </a>
+        {% endif %}
+      </nav>
+    </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <div
+      class="{% if current_user.is_authenticated %}main-content{% else %}auth-page{% endif %}"
+    >
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %} {% for category, message in messages %}
+      <div
+        class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show alert-dismiss"
+        role="alert"
+      >
+        <i
+          class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'danger' or category == 'error' %}exclamation-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}"
+        ></i>
+        {{ message }}
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Close"
+        ></button>
+      </div>
+      {% endfor %} {% endif %} {% endwith %} {% block content %}{% endblock %}
+      <footer class="footer text-center">
+        <div class="row">
+          <div class="col-md-6 text-md-start">
+            <strong>PharmaCare</strong> – Pharmacy Management System
+          </div>
+          <div class="col-md-6 text-md-end">
+            © 2026 | Developed by Swathi A | All Rights Reserved
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script>
+      const isAuthenticated = "{{ current_user.is_authenticated }}" === "True";
+
+      if (isAuthenticated) {
+        function updateAlerts() {
+          fetch("{{ url_for('alerts.api_alert_count') }}")
+            .then((response) => response.json())
+            .then((data) => {
+              const badge = document.getElementById("alert-badge");
+              if (badge) {
+                if (data.total > 0) {
+                  badge.textContent = data.total;
+                  badge.style.display = "inline-block";
+                } else {
+                  badge.style.display = "none";
+                }
+              }
+            });
+        }
+
+        updateAlerts();
+        setInterval(updateAlerts, 30000);
+      }
+    </script>
+    {% block extra_js %}{% endblock %}
+  </body>
+  <script>
+    const toggleButton = document.getElementById("themeToggle");
+    if (toggleButton) {
+      const savedTheme = localStorage.getItem("theme");
+
+      if (savedTheme) {
+        document.documentElement.setAttribute("data-theme", savedTheme);
+        toggleButton.innerHTML = savedTheme === "dark" ? "☀️" : "🌙";
+      }
+
+      toggleButton.addEventListener("click", () => {
+        let currentTheme = document.documentElement.getAttribute("data-theme");
+
+        if (currentTheme === "dark") {
+          document.documentElement.setAttribute("data-theme", "light");
+          localStorage.setItem("theme", "light");
+          toggleButton.innerHTML = "🌙";
+        } else {
+          document.documentElement.setAttribute("data-theme", "dark");
+          localStorage.setItem("theme", "dark");
+          toggleButton.innerHTML = "☀️";
+        }
+      });
+    }
+  </script>
+</html>

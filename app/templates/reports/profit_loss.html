@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Profit & Loss - Pharmacy Management System{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-chart-pie"></i> Profit & Loss Report</h2>
+</div>
+
+<!-- DATE FILTER -->
+<div class="card mb-4">
+<div class="card-body">
+
+<form method="GET" class="row g-3">
+
+<div class="col-md-4">
+<label class="form-label">From Date</label>
+<input type="date" name="start_date" class="form-control" value="{{ start_date }}">
+</div>
+
+<div class="col-md-4">
+<label class="form-label">To Date</label>
+<input type="date" name="end_date" class="form-control" value="{{ end_date }}">
+</div>
+
+<div class="col-md-4 d-flex align-items-end">
+<button class="btn btn-primary w-100">
+<i class="fas fa-filter"></i> Generate Report
+</button>
+</div>
+
+</form>
+
+</div>
+</div>
+
+
+<!-- SUMMARY CARDS -->
+<div class="row mb-4">
+
+<div class="col-md-3">
+<div class="card text-center border-success">
+<div class="card-body">
+<h6 class="text-muted">Total Sales</h6>
+<h4 class="text-success">₹{{ "%.2f"|format(total_sales) }}</h4>
+</div>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="card text-center border-danger">
+<div class="card-body">
+<h6 class="text-muted">Purchase Cost</h6>
+<h4 class="text-danger">₹{{ "%.2f"|format(total_purchase_cost) }}</h4>
+</div>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="card text-center border-warning">
+<div class="card-body">
+<h6 class="text-muted">Expenses</h6>
+<h4 class="text-warning">₹{{ "%.2f"|format(total_expenses) }}</h4>
+</div>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="card text-center border-primary">
+<div class="card-body">
+<h6 class="text-muted">Gross Profit</h6>
+<h4 class="text-primary">₹{{ "%.2f"|format(gross_profit) }}</h4>
+</div>
+</div>
+</div>
+
+</div>
+
+
+<!-- PROFIT TABLE -->
+<div class="card">
+
+<div class="card-header bg-light">
+<h5 class="mb-0">Profit Calculation</h5>
+</div>
+
+<div class="table-responsive">
+
+<table class="table table-bordered mb-0">
+
+<tbody>
+
+<tr>
+<th>Total Sales</th>
+<td class="text-end text-success">
+₹{{ "%.2f"|format(total_sales) }}
+</td>
+</tr>
+
+<tr>
+<th>Purchase Cost</th>
+<td class="text-end text-danger">
+- ₹{{ "%.2f"|format(total_purchase_cost) }}
+</td>
+</tr>
+
+<tr>
+<th>Expenses</th>
+<td class="text-end text-danger">
+- ₹{{ "%.2f"|format(total_expenses) }}
+</td>
+</tr>
+
+<tr class="table-light">
+<th>Gross Profit</th>
+<td class="text-end">
+₹{{ "%.2f"|format(gross_profit) }}
+</td>
+</tr>
+
+<tr class="table-success fw-bold">
+<th>Net Profit</th>
+<td class="text-end">
+₹{{ "%.2f"|format(net_profit) }}
+</td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+{% endblock %}
