@@ -11,6 +11,9 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch, mm
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from app.services.whatsapp_service import send_whatsapp_message
 
 sales_bp = Blueprint('sales', __name__, url_prefix='/sales')
 
@@ -62,7 +65,7 @@ def search_products():
         'sku': p.sku,
         'price': p.selling_price,
         'mrp': p.mrp,
-        'quantity': p.quantity,
+        'stock': p.quantity,
         'tax_percentage': p.tax_percentage,
         'batch_number': p.batch_number
     } for p in products])
@@ -75,49 +78,66 @@ def checkout():
     try:
         data = request.json
         items = data.get('items', [])
+
         customer_id = data.get('customer_id')
         customer_name = data.get('customer_name', '')
         customer_phone = data.get('customer_phone', '')
+
         payment_method = data.get('payment_method', 'cash')
         discount = float(data.get('discount', 0))
         include_tax = data.get('include_tax', True)
         notes = data.get('notes', '')
-        
+
+        # Fix customer lookup
+        if customer_id:
+            try:
+                customer_id = int(customer_id)
+                customer = Customer.query.get(customer_id)
+                if customer:
+                    customer_name = customer.customer_name
+                    customer_phone = getattr(customer, "phone", "")
+            except:
+                customer_id = None
+
         if not items:
             return jsonify({'success': False, 'message': 'Cart is empty'}), 400
-        
+
         company_id = current_user.company_id
-        
-        # Validate and prepare items
+
         sale_items = []
         subtotal = 0
         total_tax = 0
-        
+
         for item in items:
-            # Accept product identifier from front-end as either 'product_id' or 'id'
+
             pid = item.get('product_id') or item.get('id')
             try:
                 pid = int(pid)
-            except Exception:
+            except:
                 pid = None
 
             product = Product.query.get(pid) if pid else None
+
             if not product or product.company_id != company_id:
                 return jsonify({'success': False, 'message': 'Invalid product'}), 400
-            
+
             quantity = int(item.get('quantity', 1))
+
             if product.quantity < quantity:
-                return jsonify({'success': False, 'message': f'Insufficient stock for {product.product_name}'}), 400
-            
+                return jsonify({
+                    'success': False,
+                    'message': f'Insufficient stock for {product.product_name}'
+                }), 400
+
             unit_price = float(item.get('price', product.selling_price))
             item_discount = float(item.get('discount', 0))
-            
+
             tax_amount = 0
             if include_tax:
                 tax_amount = (unit_price * quantity - item_discount) * (product.tax_percentage / 100)
-            
+
             item_total = (unit_price * quantity) - item_discount + tax_amount
-            
+
             sale_items.append({
                 'product': product,
                 'quantity': quantity,
@@ -128,21 +148,20 @@ def checkout():
                 'item_total': item_total,
                 'batch_number': product.batch_number
             })
-            
+
             subtotal += (unit_price * quantity) - item_discount
             total_tax += tax_amount
-        
-        # Calculate total
+
         total_amount = subtotal + total_tax - discount
         if total_amount < 0:
             total_amount = 0
-        
+
         # Create sale
         sale = Sale(
             company_id=company_id,
             customer_id=customer_id,
             invoice_number=generate_invoice_number(),
-            invoice_date=datetime.utcnow(),
+            invoice_date=datetime.now(),
             customer_name=customer_name,
             customer_phone=customer_phone,
             doctor_id=data.get('doctor_id'),
@@ -154,12 +173,13 @@ def checkout():
             payment_status='paid' if payment_method != 'credit' else 'pending',
             notes=notes
         )
-        
+
         db.session.add(sale)
         db.session.flush()
-        
-        # Add items and deduct stock
+
+        # Add sale items
         for item in sale_items:
+
             sale_item = SaleItem(
                 sale_id=sale.id,
                 product_id=item['product'].id,
@@ -171,14 +191,13 @@ def checkout():
                 discount_amount=item['item_discount'],
                 total_amount=item['item_total']
             )
+
             db.session.add(sale_item)
-            
-            # Deduct stock
+
             product = item['product']
             product.quantity -= item['quantity']
-            product.updated_date = datetime.utcnow()
-            
-            # Record stock movement
+            product.updated_date = datetime.now()
+
             movement = StockMovement(
                 product_id=product.id,
                 movement_type='sale',
@@ -186,23 +205,44 @@ def checkout():
                 batch_number=item['batch_number'],
                 reference_id=sale.id
             )
+
             db.session.add(movement)
-        
-        # Update customer balance if credit sale
+
+        # Update credit balance
         if customer_id and payment_method == 'credit':
             customer = Customer.query.get(customer_id)
             if customer:
                 customer.current_balance += total_amount
-        # Associate consulting doctor if provided
-        try:
-            doc_id = data.get('doctor_id')
-            if doc_id:
-                sale.doctor_id = int(doc_id)
-        except Exception:
-            pass
-        
+
         db.session.commit()
+        print("CHECKOUT SUCCESSFUL")
+        print("Customer Phone:", customer_phone)
+
+        #whatsapp notification
+        try:
+            if customer_phone:
+
+                phone = customer_phone.strip()
+
+                # Convert to international format if needed
+                if not phone.startswith("+"):
+                    phone = "+91" + phone
+
+                
+                message = (
+                   f"🧾 *Rukmini Pharmacy*\n\n"
+                   f"Hello {customer_name},\n\n"
+                   f"📄 Invoice: {sale.invoice_number}\n"
+                   f"💰 Total: ₹{total_amount:.2f}\n"
+                   f"💳 Payment: {payment_method}\n\n"
+                   f"Thank you for choosing our pharmacy 💊"
+                )
+                send_whatsapp_message(customer_phone, message)
+        except Exception as e:
+         print("Whatsapp Message Failed:", e)
+
         
+
         return jsonify({
             'success': True,
             'message': 'Sale completed successfully',
@@ -210,11 +250,10 @@ def checkout():
             'sale_id': sale.id,
             'total_amount': total_amount
         })
-    
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
-
 
 @sales_bp.route('/invoices')
 @login_required
@@ -245,12 +284,19 @@ def invoices_list():
 def invoice_detail(sale_id):
     """View invoice"""
     sale = Sale.query.get(sale_id)
+
     if not sale or sale.company_id != current_user.company_id:
         flash('Invoice not found.', 'danger')
         return redirect(url_for('sales.invoices_list'))
-    
-    return render_template('sales/invoice_detail.html', sale=sale)
 
+    # Get returns for this invoice
+    returns = SalesReturn.query.filter_by(sale_id=sale_id).all()
+
+    return render_template(
+        'sales/invoice_detail.html',
+        sale=sale,
+        returns=returns
+    )
 
 @sales_bp.route('/invoices/<int:sale_id>/print')
 @login_required
@@ -266,303 +312,248 @@ def print_invoice(sale_id):
 @sales_bp.route('/invoices/<int:sale_id>/pdf')
 @login_required
 def download_invoice_pdf(sale_id):
-    """Download invoice as PDF with professional formatting and logo"""
+
     sale = Sale.query.get(sale_id)
+
     if not sale or sale.company_id != current_user.company_id:
         return jsonify({'success': False, 'message': 'Invoice not found'}), 404
-    
+
     try:
-        # Create PDF buffer (A4) and layout
+
+        # Register Unicode font (supports ₹)
+        pdfmetrics.registerFont(
+            TTFont('DejaVu', 'app/static/uploads/DejaVuSans.ttf')
+        )
+
+        # Calculate returns
+        returns = SalesReturn.query.filter_by(sale_id=sale_id).all()
+        returned_amount = sum(r.refund_amount for r in returns)
+        net_total = sale.total_amount - returned_amount
+
         buffer = io.BytesIO()
+
         doc = SimpleDocTemplate(
             buffer,
             pagesize=A4,
-            topMargin=0.4*inch,
-            bottomMargin=0.4*inch,
-            leftMargin=0.5*inch,
-            rightMargin=0.5*inch
+            topMargin=30,
+            bottomMargin=30,
+            leftMargin=40,
+            rightMargin=40
         )
-        
-        elements = []
+
         styles = getSampleStyleSheet()
-        
-        # Define custom styles
-        title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Heading1'],
-            fontSize=24,
-            textColor=colors.HexColor('#1a3a52'),
-            alignment=TA_CENTER,
-            spaceAfter=6,
-            fontName='Helvetica-Bold'
-        )
-        
-        subtitle_style = ParagraphStyle(
-            'Subtitle',
-            parent=styles['Normal'],
-            fontSize=10,
-            textColor=colors.HexColor('#666666'),
-            alignment=TA_CENTER,
-            spaceAfter=12
-        )
-        
-        section_header_style = ParagraphStyle(
-            'SectionHeader',
-            parent=styles['Heading2'],
-            fontSize=11,
-            textColor=colors.HexColor('#1a3a52'),
-            spaceAfter=6,
-            fontName='Helvetica-Bold',
-            borderColor=colors.HexColor('#1a3a52'),
-            borderWidth=1,
-            borderPadding=4
-        )
-        
-        # Helper to format company info and logo
-        header_data = []
+        elements = []
+
         company = sale.company
-        # Compose company contact/address
-        comp_lines = []
+
+        # ---------- HEADER ----------
+        header_style = ParagraphStyle(
+            'Header',
+            parent=styles['Normal'],
+            fontSize=14,
+            alignment=TA_CENTER,
+            fontName='DejaVu'
+        )
+
+        info_style = ParagraphStyle(
+            'Info',
+            parent=styles['Normal'],
+            fontSize=9,
+            alignment=TA_CENTER,
+            fontName='DejaVu'
+        )
+
+        elements.append(Paragraph(company.company_name, header_style))
+
+        company_info = []
+
         if getattr(company, 'address', None):
-            addr = company.address
-            parts = [addr]
-            if getattr(company, 'city', None):
-                parts.append(company.city)
-            if getattr(company, 'state', None):
-                parts.append(company.state)
-            if getattr(company, 'country', None):
-                parts.append(company.country)
-            if getattr(company, 'postal_code', None):
-                parts.append(company.postal_code)
-            comp_lines.append(', '.join([p for p in parts if p]))
+            company_info.append(company.address)
+
         if getattr(company, 'phone', None):
-            comp_lines.append(f"Phone: {company.phone}")
+            company_info.append(f"Phone: {company.phone}")
+
         if getattr(company, 'email', None):
-            comp_lines.append(f"Email: {company.email}")
+            company_info.append(f"Email: {company.email}")
 
-        comp_info = '<br/>'.join(comp_lines)
+        elements.append(Paragraph("<br/>".join(company_info), info_style))
 
-        # Resolve logo path relative to static folder if needed
-        logo_path = company.logo_path
-        logo_full = None
-        if logo_path:
-            candidate = os.path.join(os.getcwd(), 'app', 'static', logo_path)
-            if os.path.exists(candidate):
-                logo_full = candidate
+        elements.append(Spacer(1, 12))
 
-        if logo_full:
-            try:
-                img = Image(logo_full, width=1.0*inch, height=1.0*inch)
-                header_data.append([img, Paragraph(f"<b>{company.company_name}</b><br/>{comp_info}", subtitle_style)])
-            except:
-                header_data.append([Paragraph(f"<b>{company.company_name}</b><br/>{comp_info}", subtitle_style)])
-        else:
-            header_data.append([Paragraph(f"<b>{company.company_name}</b><br/>{comp_info}", subtitle_style)])
+        # ---------- TITLE ----------
+        title_style = ParagraphStyle(
+            'Title',
+            parent=styles['Heading1'],
+            alignment=TA_CENTER,
+            fontName='DejaVu'
+        )
 
-        header_table = Table(header_data, colWidths=[1.2*inch, doc.width-1.2*inch])
-        header_table.setStyle(TableStyle([
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('ALIGN', (0, 0), (0, -1), 'CENTER'),
-        ]))
-        elements.append(header_table)
-        elements.append(Spacer(1, 0.15*inch))
-        
-        # Invoice Title
-        elements.append(Paragraph(f"<b>INVOICE</b>", title_style))
-        
-        # Invoice and Date Info
-        invoice_info_data = [
-            [Paragraph(f"<b>Invoice #:</b> {sale.invoice_number}", styles['Normal']),
-             Paragraph(f"<b>Date:</b> {sale.invoice_date.strftime('%d-%m-%Y')}", styles['Normal']),
-             Paragraph(f"<b>Time:</b> {sale.invoice_date.strftime('%H:%M:%S')}", styles['Normal'])],
+        elements.append(Paragraph("INVOICE", title_style))
+        elements.append(Spacer(1, 10))
+
+        # ---------- INVOICE INFO ----------
+        invoice_data = [
+            ['Invoice No', sale.invoice_number],
+            ['Date', sale.invoice_date.strftime('%d-%m-%Y')],
+            ['Time', sale.invoice_date.strftime('%H:%M:%S')]
         ]
-        
-        invoice_info_table = Table(invoice_info_data, colWidths=[2.5*inch, 2*inch, 2*inch])
-        invoice_info_table.setStyle(TableStyle([
-            ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('TEXTCOLOR', (0, 0), (-1, -1), colors.HexColor('#333333')),
+
+        invoice_table = Table(invoice_data, colWidths=[100, 200])
+
+        invoice_table.setStyle(TableStyle([
+            ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+            ('BACKGROUND', (0,0), (0,-1), colors.lightgrey),
+            ('FONTNAME', (0,0), (0,-1), 'DejaVu')
         ]))
-        elements.append(invoice_info_table)
-        elements.append(Spacer(1, 0.15*inch))
-        
-        # Customer and Company Details
-        bill_to = f"<b>Bill To:</b><br/>{sale.customer_name or 'Walk-in Customer'}"
-        if sale.customer_phone:
-            bill_to += f"<br/>Phone: {sale.customer_phone}"
-        if sale.customer and getattr(sale.customer, 'address', None):
-            bill_to += f"<br/>{sale.customer.address}"
-        
-        bill_ship_data = [
-            [Paragraph(bill_to, styles['Normal']),
-             Paragraph(f"<b>Sold By:</b><br/>{company.company_name}", styles['Normal'])]
+
+        elements.append(invoice_table)
+        elements.append(Spacer(1, 15))
+
+        # ---------- BILL TO ----------
+        bill_data = [
+            [
+                Paragraph(f"<b>Bill To</b><br/>{sale.customer_name or 'Walk-in Customer'}",
+                          ParagraphStyle('normal', fontName='DejaVu')),
+                Paragraph(f"<b>Sold By</b><br/>{company.company_name}",
+                          ParagraphStyle('normal', fontName='DejaVu'))
+            ]
         ]
-        
-        bill_ship_table = Table(bill_ship_data, colWidths=[3.5*inch, 3.5*inch])
-        bill_ship_table.setStyle(TableStyle([
-            ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('TOPPADDING', (0, 0), (-1, -1), 3),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
-        ]))
-        elements.append(bill_ship_table)
-        elements.append(Spacer(1, 0.2*inch))
-        
-        # Items Table
+
+        bill_table = Table(bill_data, colWidths=[250,250])
+        elements.append(bill_table)
+
+        elements.append(Spacer(1, 20))
+
+        # ---------- ITEMS TABLE ----------
         item_data = [['Item', 'Qty', 'Unit Price', 'Discount', 'Tax', 'Amount']]
-        
+
         for item in sale.items:
             item_data.append([
-                Paragraph(f"<b>{item.product.product_name}</b><br/><font size=7>SKU: {item.product.sku}</font>", styles['Normal']),
-                Paragraph(str(item.quantity), ParagraphStyle('Normal', parent=styles['Normal'], alignment=TA_CENTER)),
-                Paragraph(f"₹{item.unit_price:.2f}", ParagraphStyle('Normal', parent=styles['Normal'], alignment=TA_RIGHT)),
-                Paragraph(f"₹{item.discount_amount:.2f}", ParagraphStyle('Normal', parent=styles['Normal'], alignment=TA_RIGHT)),
-                Paragraph(f"₹{item.tax_amount:.2f}", ParagraphStyle('Normal', parent=styles['Normal'], alignment=TA_RIGHT)),
-                Paragraph(f"<b>₹{item.total_amount:.2f}</b>", ParagraphStyle('Normal', parent=styles['Normal'], alignment=TA_RIGHT))
+                item.product.product_name,
+                str(item.quantity),
+                f"₹ {item.unit_price:.2f}",
+                f"₹ {item.discount_amount:.2f}",
+                f"₹ {item.tax_amount:.2f}",
+                f"₹ {item.total_amount:.2f}"
             ])
-        
-        items_table = Table(item_data, colWidths=[2.8*inch, 0.6*inch, 1*inch, 0.8*inch, 0.8*inch, 1*inch])
-        items_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a3a52')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 9),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-            ('TOPPADDING', (0, 0), (-1, 0), 8),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
-            ('FONTSIZE', (0, 1), (-1, -1), 8),
-            ('TEXTCOLOR', (0, 1), (-1, -1), colors.HexColor('#333333')),
-            ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#cccccc')),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f9f9f9')]),
-            ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('LEFTPADDING', (0, 0), (-1, -1), 6),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 6),
-            ('TOPPADDING', (0, 1), (-1, -1), 6),
-            ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
-        ]))
-        
-        elements.append(items_table)
-        elements.append(Spacer(1, 0.15*inch))
-        
-        # Summary Section
-        summary_data = [
-            ['', 'Subtotal', f"₹{sale.subtotal:.2f}"],
-            ['', 'Tax Amount', f"₹{sale.tax_amount:.2f}"],
-            ['', 'Discount', f"-₹{sale.discount_amount:.2f}"],
-            ['', '', ''],
-            ['', 'TOTAL AMOUNT', f"₹{sale.total_amount:.2f}"],
-        ]
-        
-        summary_table = Table(summary_data, colWidths=[3.5*inch, 2*inch, 1.5*inch])
-        summary_table.setStyle(TableStyle([
-            ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
-            ('FONTNAME', (1, 0), (-1, 3), 'Helvetica-Bold'),
-            ('FONTSIZE', (1, 0), (-1, 3), 9),
-            ('FONTSIZE', (1, 4), (-1, 4), 11),
-            ('FONTNAME', (1, 4), (-1, 4), 'Helvetica-Bold'),
-            ('BACKGROUND', (1, 4), (-1, 4), colors.HexColor('#1a3a52')),
-            ('TEXTCOLOR', (1, 4), (-1, 4), colors.whitesmoke),
-            ('TOPPADDING', (1, 4), (-1, 4), 8),
-            ('BOTTOMPADDING', (1, 4), (-1, 4), 8),
-            ('LINEABOVE', (1, 3), (-1, 3), 0.5, colors.HexColor('#cccccc')),
-            ('LINEABOVE', (1, 4), (-1, 4), 1, colors.HexColor('#1a3a52')),
-            ('RIGHTPADDING', (2, 0), (2, -1), 10),
-        ]))
-        
-        elements.append(summary_table)
-        elements.append(Spacer(1, 0.2*inch))
-        
-        # Payment Details
-        payment_data = [
-            ['Payment Method:', sale.payment_method.upper()],
-            ['Payment Status:', sale.payment_status.upper()],
-        ]
-        
-        if sale.notes:
-            payment_data.append(['Notes:', sale.notes])
-        
-        payment_table = Table(payment_data, colWidths=[1.5*inch, 5.5*inch])
-        payment_table.setStyle(TableStyle([
-            ('FONTSIZE', (0, 0), (-1, -1), 8),
-            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('TOPPADDING', (0, 0), (-1, -1), 3),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
-        ]))
-        elements.append(payment_table)
-        
-        elements.append(Spacer(1, 0.3*inch))
-        
-        # Footer
-        footer_style = ParagraphStyle(
-            'Footer',
-            parent=styles['Normal'],
-            fontSize=8,
-            textColor=colors.HexColor('#999999'),
-            alignment=TA_CENTER
+
+        items_table = Table(
+            item_data,
+            colWidths=[220,50,80,80,60,80]
         )
-        
-        elements.append(Paragraph(
-            "Thank you for your business!<br/>This is a computer-generated invoice. No signature required.",
-            footer_style
-        ))
 
-        # Support store copy option: include both customer and merchant copies on same A4 page
-        include_store_copy = request.args.get('store_copy', '1') not in ('0', 'false', 'False')
+        items_table.setStyle(TableStyle([
 
-        # Build content for one invoice copy; we'll re-use by cloning elements fragments
-        # For simplicity, rebuild elements per copy to ensure separation
-        def build_invoice_copy(copy_label=None):
-            part = []
-            # header
-            part.append(header_table)
-            part.append(Spacer(1, 0.08*inch))
-            if copy_label:
-                part.append(Paragraph(f"<b>{copy_label}</b>", subtitle_style))
-                part.append(Spacer(1, 0.05*inch))
+    ('FONTNAME',(0,0),(-1,-1),'DejaVu'),
 
-            part.append(Paragraph(f"<b>INVOICE</b>", title_style))
-            part.append(Spacer(1, 0.05*inch))
-            part.append(invoice_info_table)
-            part.append(Spacer(1, 0.06*inch))
-            part.append(bill_ship_table)
-            part.append(Spacer(1, 0.06*inch))
-            part.append(items_table)
-            part.append(Spacer(1, 0.06*inch))
-            part.append(summary_table)
-            part.append(Spacer(1, 0.04*inch))
-            part.append(payment_table)
-            part.append(Spacer(1, 0.04*inch))
-            part.append(Paragraph(
-                "Thank you for your business!<br/>This is a computer-generated invoice. No signature required.",
-                footer_style
-            ))
-            return part
+    ('BACKGROUND',(0,0),(-1,0),colors.HexColor('#1a3a52')),
+    ('TEXTCOLOR',(0,0),(-1,0),colors.white),
 
-        # Assemble page: customer copy on top
-        elements = build_invoice_copy('Customer Copy')
-        if include_store_copy:
-            # small separator line then store copy
-            elements.append(Spacer(1, 0.2*inch))
-            elements.append(Table([['']], colWidths=[doc.width], style=[('LINEABOVE', (0,0), (-1,0), 0.5, colors.HexColor('#cccccc'))]))
-            elements.append(Spacer(1, 0.1*inch))
-            elements.extend(build_invoice_copy('Merchant Copy'))
+    ('ALIGN',(1,1),(-1,-1),'RIGHT'),
+    ('GRID',(0,0),(-1,-1),0.5,colors.grey),
+
+    ('ROWBACKGROUNDS',(0,1),(-1,-1),
+    [colors.white,colors.HexColor('#f7f7f7')])
+
+]))
+
+        elements.append(items_table)
+        elements.append(Spacer(1, 20))
+
+        # ---------- SUMMARY ----------
+        summary_data = [
+            ['Subtotal', f"₹ {sale.subtotal:.2f}"],
+            ['Tax', f"₹ {sale.tax_amount:.2f}"],
+            ['Discount', f"- ₹ {sale.discount_amount:.2f}"]
+        ]
+
+        if returned_amount > 0:
+            summary_data.append(['Returned', f"- ₹ {returned_amount:.2f}"])
+
+        summary_data.append(['NET TOTAL', f"₹ {net_total:.2f}"])
+
+        summary_table = Table(summary_data, colWidths=[150,120])
+
+        summary_table.setStyle(TableStyle([
+
+    ('FONTNAME',(0,0),(-1,-1),'DejaVu'),
+
+    ('ALIGN',(1,0),(-1,-1),'RIGHT'),
+    ('GRID',(0,0),(-1,-2),0.5,colors.grey),
+
+    ('FONTSIZE',(0,-1),(-1,-1),12),
+
+    ('BACKGROUND',(0,-1),(-1,-1),colors.HexColor('#1a3a52')),
+    ('TEXTCOLOR',(0,-1),(-1,-1),colors.white)
+
+]))
+        elements.append(summary_table)
+
+        elements.append(Spacer(1, 30))
+
+        footer = Paragraph(
+            "Thank you for your purchase.<br/>This is a computer generated invoice.",
+            ParagraphStyle('footer', alignment=TA_CENTER, fontSize=8, fontName='DejaVu')
+        )
+
+        elements.append(footer)
 
         doc.build(elements)
+
         buffer.seek(0)
-        
+
         return send_file(
             buffer,
             mimetype='application/pdf',
             as_attachment=True,
             download_name=f"invoice_{sale.invoice_number}.pdf"
         )
-    
+
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
+    
 
 
+@sales_bp.route('/send-invoice-whatsapp/<int:sale_id>', methods=['POST'])
+@login_required
+def send_invoice_whatsapp(sale_id):
+
+    sale = Sale.query.get(sale_id)
+
+    if not sale:
+        return jsonify({"success": False, "message": "Invoice not found"})
+
+    try:
+
+        phone = sale.customer_phone
+
+        if not phone:
+            return jsonify({"success": False, "message": "Customer phone missing"})
+
+        if not phone.startswith("+"):
+            phone = "+91" + phone
+
+        # build items
+        items_text = ""
+        for item in sale.items:
+            items_text += f"• {item.product.product_name} × {item.quantity}\n"
+
+        message = (
+            f"🧾 Rukmini Pharmacy\n\n"
+            f"Hello {sale.customer_name or 'Customer'} 👋\n\n"
+            f"Invoice: {sale.invoice_number}\n\n"
+            f"Items:\n{items_text}\n"
+            f"Total: ₹{sale.total_amount:.2f}\n\n"
+            f"Thank you for choosing our pharmacy 💊"
+        )
+
+        send_whatsapp_message(phone, message)
+
+        return jsonify({"success": True})
+
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+        
 @sales_bp.route('/invoices/<int:sale_id>/cancel', methods=['POST'])
 @login_required
 def cancel_invoice(sale_id):

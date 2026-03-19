@@ -195,8 +195,104 @@ def purchase_detail(purchase_id):
     if not purchase or purchase.company_id != current_user.company_id:
         flash('Purchase not found.', 'danger')
         return redirect(url_for('purchases.purchases_list'))
+    returns = PurchaseReturn.query.filter_by(
+    purchase_id=purchase_id
+).order_by(PurchaseReturn.return_date.desc()).all()
     
-    return render_template('purchases/purchase_detail.html', purchase=purchase)
+    return render_template(
+    'purchases/purchase_detail.html',
+    purchase=purchase,
+    returns=returns
+)
+
+@purchases_bp.route('/<int:purchase_id>/print')
+@login_required
+@require_roles('owner')
+def print_purchase(purchase_id):
+
+    purchase = Purchase.query.get(purchase_id)
+
+    if not purchase or purchase.company_id != current_user.company_id:
+        flash('Purchase not found.', 'danger')
+        return redirect(url_for('purchases.purchases_list'))
+
+    return render_template(
+        'purchases/print_purchase.html',
+        purchase=purchase
+    )
+@purchases_bp.route('/<int:purchase_id>/pdf')
+@login_required
+@require_roles('owner')
+def download_purchase_pdf(purchase_id):
+
+    purchase = Purchase.query.get(purchase_id)
+
+    if not purchase or purchase.company_id != current_user.company_id:
+        return jsonify({'success': False, 'message': 'Purchase not found'}), 404
+
+    try:
+        import io
+        from flask import send_file
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+
+        pdfmetrics.registerFont(
+            TTFont('DejaVu', 'app/static/uploads/DejaVuSans.ttf')
+        )
+
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+
+        styles = getSampleStyleSheet()
+        elements = []
+
+        elements.append(Paragraph("PURCHASE INVOICE", styles['Title']))
+        elements.append(Spacer(1, 10))
+
+        elements.append(Paragraph(f"PO: {purchase.purchase_number}", styles['Normal']))
+        elements.append(Paragraph(f"Supplier: {purchase.supplier.supplier_name}", styles['Normal']))
+
+        elements.append(Spacer(1, 10))
+
+        data = [['Item','Qty','Price','Tax','Total']]
+
+        for i in purchase.items:
+            data.append([
+                i.product.product_name,
+                i.quantity,
+                i.unit_price,
+                i.tax_amount,
+                i.total_amount
+            ])
+
+        table = Table(data)
+        table.setStyle(TableStyle([
+            ('GRID',(0,0),(-1,-1),0.5,colors.grey)
+        ]))
+
+        elements.append(table)
+
+        elements.append(Spacer(1, 10))
+
+        elements.append(Paragraph(f"Total: ₹{purchase.total_amount}", styles['Heading2']))
+
+        doc.build(elements)
+
+        buffer.seek(0)
+
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name=f"purchase_{purchase.purchase_number}.pdf",
+            mimetype='application/pdf'
+        )
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 
 @purchases_bp.route('/<int:purchase_id>/edit', methods=['GET', 'POST'])

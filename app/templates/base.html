@@ -150,6 +150,24 @@ body {
   border-radius:8px;
   transition:all 0.25s ease;
 }
+
+.btn.rounded-circle {
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn.rounded-circle i {
+    font-size: 14px;
+}
+
+.btn.rounded-circle:hover {
+    transform: scale(1.1);
+    transition: 0.2s;
+}
+
 .user-menu-navbar:hover{
   background:rgba(255,255,255,0.15);
 }
@@ -441,20 +459,28 @@ body {
           <i class="fas fa-undo"></i> Sales Returns
         </a>
 
-        <div class="nav-section-title">Purchases</div>
-        <a
-          class="nav-link {% if 'purchases' in request.path %}active{% endif %}"
-          href="{{ url_for('purchases.purchases_list') }}"
-        >
-          <i class="fas fa-shopping-cart"></i> Purchases
-        </a>
-        <li>
-          <a
-            class="nav-link {% if 'returns' in request.path %}active{% endif %}"
-            href="{{ url_for('purchases.returns_list') }}"
-          >
-            <i class="fas fa-undo"></i> Purchase Returns
-          </a>
+<div class="nav-section-title">Purchases</div>
+
+<a
+  class="nav-link {% if request.endpoint == 'purchases.purchases_list' %}active{% endif %}"
+  href="{{ url_for('purchases.purchases_list') }}"
+>
+  <i class="fas fa-shopping-cart"></i> Purchases
+</a>
+
+<a
+  class="nav-link {% if 'purchases' in request.path %}active{% endif %}"
+  href="{{ url_for('purchases.purchases_list') }}"
+>
+  <i class="fas fa-receipt"></i> Purchase Invoices
+</a>
+
+<a
+  class="nav-link {% if request.endpoint == 'purchases.returns_list' %}active{% endif %}"
+  href="{{ url_for('purchases.returns_list') }}"
+>
+  <i class="fas fa-undo"></i> Purchase Returns
+</a>
         </li>
 
         <div class="nav-section-title">Management</div>

@@ -6,8 +6,10 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+
 # Create app
 app, login_manager = create_app(os.environ.get('FLASK_ENV', 'development'))
+
 
 if __name__ == '__main__':
     app.run(

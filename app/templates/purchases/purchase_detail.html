@@ -1,158 +1,285 @@
 {% extends "base.html" %}
 
-{% block title %}Purchase Details - Pharmacy Management System{% endblock %}
+{% block title %}Purchase {{ purchase.purchase_number }}{% endblock %}
 
 {% block content %}
-<div class="mb-4">
-    <a href="{{ url_for('purchases.purchases_list') }}" class="btn btn-sm btn-secondary">
-        <i class="fas fa-arrow-left"></i> Back to Purchases
-    </a>
+<div class="container-fluid py-4">
+
+    <!-- HEADER -->
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8 d-flex align-items-center">
+            <i class="fas fa-truck fa-2x text-primary me-3"></i>
+            <div>
+                <h1 class="mb-0">
+                    <i class="fas fa-file-invoice"></i> Purchase {{ purchase.purchase_number }}
+                </h1>
+                <p class="text-muted">
+                    Date: {{ purchase.purchase_date.strftime('%Y-%m-%d %H:%M:%S') }}
+                </p>
+            </div>
+        </div>
+
+        <div class="col-md-4 text-end">
+    <div class="btn-group">
+
+        <a href="{{ url_for('purchases.print_purchase', purchase_id=purchase.id) }}" 
+           class="btn btn-outline-secondary" target="_blank">
+            <i class="fas fa-print"></i> Print
+        </a>
+
+        <a href="{{ url_for('purchases.download_purchase_pdf', purchase_id=purchase.id) }}" 
+           class="btn btn-outline-info">
+            <i class="fas fa-download"></i> PDF
+        </a>
+
+        <a href="{{ url_for('purchases.process_return', purchase_id=purchase.id) }}" 
+           class="btn btn-outline-warning">
+            <i class="fas fa-undo"></i> Return
+        </a>
+
+    </div>
+</div>    
 </div>
 
-<h2 class="mb-4">Purchase Order {{ purchase.purchase_number }}</h2>
+    <div class="row">
 
-<div class="row">
-    <div class="col-lg-8">
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">Order Details</h5>
-            </div>
-            <div class="card-body">
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label text-muted">PO Number</label>
-                        <p class="fw-bold">{{ purchase.purchase_number }}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label text-muted">Supplier</label>
-                        <p class="fw-bold">{{ purchase.supplier.supplier_name }}</p>
-                    </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label text-muted">Purchase Date</label>
-                        <p>{{ purchase.purchase_date.strftime('%Y-%m-%d %H:%M') if purchase.purchase_date else '' }}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label text-muted">Supplier Invoice</label>
-                        <p>{{ purchase.supplier_invoice_number or 'Not provided' }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- LEFT SIDE -->
+        <div class="col-lg-8">
 
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">Items</h5>
+            <!-- SUPPLIER + COMPANY -->
+            <div class="card mb-4">
+                <div class="card-body">
+
+                    <div class="row">
+
+                        <!-- SUPPLIER -->
+                        <div class="col-md-6">
+                            <h6 class="text-secondary">FROM (Supplier)</h6>
+
+                            <strong>{{ purchase.supplier.supplier_name }}</strong><br>
+
+                            {% if purchase.supplier.supplier_address %}
+                            <small class="text-muted">{{ purchase.supplier.supplier_address }}</small><br>
+                            {% endif %}
+
+                            {% if purchase.supplier.supplier_phone %}
+                            <small class="text-muted">Phone: {{ purchase.supplier.supplier_phone }}</small>
+                            {% endif %}
+                        </div>
+
+                        <!-- YOUR COMPANY -->
+                        <div class="col-md-6">
+                            <h6 class="text-secondary">TO (Your Pharmacy)</h6>
+
+                            <strong>{{ current_user.company.company_name }}</strong><br>
+
+                            {% if current_user.company.company_address %}
+                            <small class="text-muted">{{ current_user.company.company_address }}</small><br>
+                            {% endif %}
+
+                            {% if current_user.company.company_phone %}
+                            <small class="text-muted">Phone: {{ current_user.company.company_phone }}</small><br>
+                            {% endif %}
+
+                            {% if current_user.company.gst_number %}
+                            <small class="text-muted">GSTIN: {{ current_user.company.gst_number }}</small>
+                            {% endif %}
+                        </div>
+
+                    </div>
+
+                </div>
             </div>
-            <div class="table-responsive">
-                <table class="table mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Product</th>
-                            <th>Batch</th>
-                            <th>Expiry</th>
-                            <th>Qty</th>
-                            <th>Unit Price</th>
-                            <th>Tax %</th>
-                            <th>Tax Amount</th>
-                            <th>Discount</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+
+            <!-- ITEMS -->
+            <div class="card mb-4">
+
+                <div class="card-header">
+                    <h5 class="mb-0">Purchase Items</h5>
+                </div>
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover mb-0">
+
+                        <thead class="table-light">
+                            <tr>
+                                <th>Product</th>
+                                <th class="text-center">Batch</th>
+                                <th class="text-center">Expiry</th>
+                                <th class="text-end">Qty</th>
+                                <th class="text-end">Unit Price</th>
+                                <th class="text-end">Tax</th>
+                                <th class="text-end">Amount</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
                         {% for item in purchase.items %}
                         <tr>
-                            <td><strong>{{ item.product.product_name }}</strong></td>
-                            <td>{{ item.batch_number }}</td>
-                            <td>{{ item.expiry_date.strftime('%Y-%m-%d') if item.expiry_date else '' }}</td>
-                            <td>{{ item.quantity }}</td>
-                            <td>₹{{ "%.2f"|format(item.unit_price) }}</td>
-                            <td>{{ item.tax_percentage }}%</td>
-                            <td>₹{{ "%.2f"|format(item.tax_amount) }}</td>
-                            <td>₹{{ "%.2f"|format(item.discount_amount) }}</td>
-                            <td>₹{{ "%.2f"|format(item.total_amount) }}</td>
+
+                            <td>
+                                <strong>{{ item.product.product_name }}</strong>
+                            </td>
+
+                            <td class="text-center">{{ item.batch_number }}</td>
+
+                            <td class="text-center">
+                                {{ item.expiry_date.strftime('%m/%Y') if item.expiry_date else '' }}
+                            </td>
+
+                            <td class="text-end">{{ item.quantity }}</td>
+
+                            <td class="text-end">₹{{ "%.2f"|format(item.unit_price) }}</td>
+
+                            <td class="text-end">₹{{ "%.2f"|format(item.tax_amount) }}</td>
+
+                            <td class="text-end">
+                                <strong>₹{{ "%.2f"|format(item.total_amount) }}</strong>
+                            </td>
+
                         </tr>
                         {% endfor %}
-                    </tbody>
-                </table>
+                        </tbody>
+                        
+
+                    </table>
+
+                </div>
             </div>
-        </div>
+
+            {% if returns %}
+<div class="card mb-4">
+
+    <div class="card-header bg-warning">
+        <h5 class="mb-0">
+            <i class="fas fa-undo"></i> Purchase Returns
+        </h5>
     </div>
 
-    <div class="col-lg-4">
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">Order Summary</h5>
-            </div>
-            <div class="card-body">
-                <div class="d-flex justify-content-between mb-2">
-                    <span>Subtotal</span>
-                    <span>₹{{ "%.2f"|format(purchase.subtotal) }}</span>
-                </div>
-                <div class="d-flex justify-content-between mb-2">
-                    <span>Tax Amount</span>
-                    <span>₹{{ "%.2f"|format(purchase.tax_amount) }}</span>
-                </div>
-                <div class="d-flex justify-content-between mb-2">
-                    <span>Discount</span>
-                    <span>₹{{ "%.2f"|format(purchase.discount_amount) }}</span>
-                </div>
-                <hr>
-                <div class="d-flex justify-content-between" style="font-size: 1.2rem; font-weight: bold;">
-                    <span>Total Amount</span>
-                    <span>₹{{ "%.2f"|format(purchase.total_amount) }}</span>
-                </div>
-            </div>
-        </div>
+    <div class="table-responsive">
 
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">Payment Status</h5>
-            </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label class="form-label text-muted">Status</label>
-                    <p>
-                        {% if purchase.payment_status == 'paid' %}
-                            <span class="badge bg-success">Paid</span>
-                        {% elif purchase.payment_status == 'partial' %}
-                            <span class="badge bg-warning text-dark">Partial</span>
-                        {% else %}
-                            <span class="badge bg-danger">Pending</span>
-                        {% endif %}
-                    </p>
-                </div>
-                {% if purchase.payment_date %}
-                <div class="mb-3">
-                    <label class="form-label text-muted">Payment Date</label>
-                    <p>{{ purchase.payment_date.strftime('%Y-%m-%d') if purchase.payment_date else '' }}</p>
-                </div>
-                {% endif %}
-                {% if purchase.payment_status != 'paid' %}
-                <form method="POST" action="{{ url_for('purchases.record_payment', purchase_id=purchase.id) }}" class="mb-3">
-                    <input type="hidden" name="amount" value="{{ purchase.total_amount }}">
-                    <button type="submit" class="btn btn-success btn-sm w-100">
-                        <i class="fas fa-check"></i> Mark as Paid
-                    </button>
-                </form>
-                {% endif %}
-            </div>
-        </div>
+        <table class="table table-hover mb-0">
 
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Actions</h5>
-            </div>
-            <div class="card-body">
-                <a href="{{ url_for('purchases.edit_purchase', purchase_id=purchase.id) }}" class="btn btn-outline-primary btn-sm w-100 mb-2">
-                    <i class="fas fa-edit"></i> Edit
-                </a>
-                <a href="{{ url_for('purchases.process_return', purchase_id=purchase.id) }}" class="btn btn-outline-warning btn-sm w-100">
-                    <i class="fas fa-undo"></i> Return Items
-                </a>
-            </div>
-        </div>
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th class="text-center">Quantity</th>
+                    <th class="text-end">Credit Amount</th>
+                    <th>Reason</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+            {% for r in returns %}
+            <tr>
+
+                <td>
+                    {{ r.return_date.strftime('%Y-%m-%d %H:%M') if r.return_date else '' }}
+                </td>
+
+                <td class="text-center">
+                    {{ r.quantity }}
+                </td>
+
+                <td class="text-end text-danger">
+                    ₹{{ "%.2f"|format(r.credit_amount) }}
+                </td>
+
+                <td>
+                    {{ r.reason }}
+                </td>
+
+            </tr>
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
     </div>
+
+</div>
+{% endif %}
+        </div>
+
+        <!-- RIGHT SIDE -->
+        <div class="col-lg-4">
+
+            <!-- SUMMARY -->
+            <div class="card mb-4">
+
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Purchase Summary</h6>
+                </div>
+
+                <div class="card-body">
+
+                    <div class="row mb-2">
+                        <div class="col-6">Subtotal</div>
+                        <div class="col-6 text-end">₹{{ "%.2f"|format(purchase.subtotal) }}</div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-6">Tax</div>
+                        <div class="col-6 text-end">₹{{ "%.2f"|format(purchase.tax_amount) }}</div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-6">Discount</div>
+                        <div class="col-6 text-end">₹{{ "%.2f"|format(purchase.discount_amount) }}</div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-6"><strong>Total</strong></div>
+                        <div class="col-6 text-end">
+                            <strong class="fs-4 text-primary">
+                                ₹{{ "%.2f"|format(purchase.total_amount) }}
+                            </strong>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- PAYMENT -->
+            <div class="card mb-4">
+
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">Payment Status</h6>
+                </div>
+
+                <div class="card-body text-center">
+
+                    {% if purchase.payment_status == 'paid' %}
+                        <span class="badge bg-success p-2">PAID</span>
+                    {% elif purchase.payment_status == 'partial' %}
+                        <span class="badge bg-warning text-dark p-2">PARTIAL</span>
+                    {% else %}
+                        <span class="badge bg-danger p-2">PENDING</span>
+                    {% endif %}
+
+                </div>
+            </div>
+
+            <a href="{{ url_for('purchases.purchases_list') }}" class="btn btn-outline-secondary w-100">
+                Back to Purchases
+            </a>
+
+        </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <div class="text-center mt-4">
+        <small class="text-muted">
+            Purchase invoice generated for internal records.<br>
+            Goods received as per supplier invoice.
+        </small>
+    </div>
+
 </div>
 {% endblock %}

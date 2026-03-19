@@ -311,8 +311,6 @@ def expiry_report():
         days_filter=days_filter
     )
 
-# ---------------- PROFIT & LOSS ---------------- #
-
 @reports_bp.route('/profit-loss')
 @login_required
 @require_roles('owner')
@@ -323,40 +321,55 @@ def profit_loss_report():
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
 
+    # Default to current month
     if not start_date or not end_date:
         today = datetime.utcnow().date()
         start_date = today.replace(day=1).strftime('%Y-%m-%d')
         end_date = today.strftime('%Y-%m-%d')
 
+    # Convert to datetime
     start = datetime.strptime(start_date, '%Y-%m-%d')
     end = datetime.strptime(end_date, '%Y-%m-%d')
 
+    # FIX: include entire end date
+    end = end.replace(hour=23, minute=59, second=59)
+
+    # ---------------- TOTAL SALES ----------------
     total_sales = db.session.query(func.sum(Sale.total_amount)).filter(
         Sale.company_id == company_id,
-        Sale.invoice_date.between(start, end),
+        Sale.invoice_date >= start,
+        Sale.invoice_date <= end,
         Sale.is_cancelled == False
     ).scalar() or 0
 
+    # ---------------- TOTAL PURCHASE COST ----------------
     total_purchase = db.session.query(func.sum(Purchase.total_amount)).filter(
         Purchase.company_id == company_id,
-        Purchase.purchase_date.between(start, end)
+        Purchase.purchase_date >= start,
+        Purchase.purchase_date <= end
     ).scalar() or 0
 
+    # ---------------- TOTAL EXPENSES ----------------
     total_expenses = db.session.query(func.sum(Expense.amount)).filter(
         Expense.company_id == company_id,
-        Expense.expense_date.between(start, end)
+        Expense.expense_date >= start,
+        Expense.expense_date <= end
     ).scalar() or 0
 
+    # ---------------- PROFIT CALCULATION ----------------
     gross_profit = total_sales - total_purchase
     net_profit = gross_profit - total_expenses
 
     return render_template(
         'reports/profit_loss.html',
+
         start_date=start_date,
         end_date=end_date,
+
         total_sales=total_sales,
         total_purchase_cost=total_purchase,
         total_expenses=total_expenses,
+
         gross_profit=gross_profit,
         net_profit=net_profit
     )

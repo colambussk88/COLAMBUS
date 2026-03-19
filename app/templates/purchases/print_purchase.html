@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+
+{% block title %}Purchase Invoice {{ purchase.purchase_number }}{% endblock %}
+
+{% block extra_css %}
+<style>
+
+@media print {
+    body { margin:0; padding:0; background:white; }
+    @page { size:A5; margin:10mm; }
+    .no-print { display:none !important; }
+    .invoice-container { margin:0; padding:20px; border:none; }
+}
+
+.invoice-container{
+    max-width:750px;
+    margin:auto;
+    background:white;
+    padding:30px;
+    border:1px solid #ddd;
+}
+
+.invoice-header{
+    text-align:center;
+    margin-bottom:25px;
+    border-bottom:2px solid #333;
+    padding-bottom:15px;
+}
+
+.invoice-header h1{
+    margin:0;
+    font-size:26px;
+}
+
+.invoice-number{
+    font-size:13px;
+    color:#666;
+    margin-top:6px;
+}
+
+.invoice-details{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:30px;
+    margin-bottom:30px;
+}
+
+.company-info h6,
+.supplier-info h6{
+    font-size:11px;
+    color:#666;
+    text-transform:uppercase;
+    margin-bottom:5px;
+}
+
+.company-info p,
+.supplier-info p{
+    margin:2px 0;
+    font-size:12px;
+}
+
+.items-table{
+    width:100%;
+    border-collapse:collapse;
+    margin-bottom:25px;
+}
+
+.items-table thead{
+    background:#f5f5f5;
+    border-top:2px solid #333;
+    border-bottom:2px solid #333;
+}
+
+.items-table th{
+    padding:8px;
+    font-size:12px;
+}
+
+.items-table td{
+    padding:8px;
+    border-bottom:1px solid #ddd;
+    font-size:11px;
+}
+
+.text-right{ text-align:right; }
+.text-center{ text-align:center; }
+
+.summary{
+    margin-top:10px;
+    border-top:2px solid #333;
+    padding-top:15px;
+}
+
+.summary-row{
+    display:flex;
+    justify-content:space-between;
+    font-size:12px;
+    margin-bottom:6px;
+}
+
+.summary-row.total{
+    font-size:14px;
+    font-weight:bold;
+    border-top:1px solid #ccc;
+    padding-top:8px;
+}
+
+.payment-info{
+    background:#f9f9f9;
+    padding:12px;
+    font-size:11px;
+    margin-top:20px;
+}
+
+.footer{
+    text-align:center;
+    font-size:10px;
+    color:#888;
+    margin-top:25px;
+    border-top:1px solid #ddd;
+    padding-top:10px;
+}
+
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<!-- AUTO PRINT -->
+<script>
+window.onload = function() {
+    setTimeout(() => {
+        window.print();
+    }, 500);
+}
+</script>
+
+<div class="no-print" style="margin:20px">
+<button onclick="printInvoice()" class="btn btn-primary">
+<i class="fas fa-print"></i> Print Invoice
+</button>
+
+<a href="{{ url_for('purchases.purchase_detail', purchase_id=purchase.id) }}" class="btn btn-secondary">
+Back
+</a>
+</div>
+
+
+<div class="invoice-container">
+
+<div class="invoice-header">
+
+<h1>{{ current_user.company.company_name }}</h1>
+
+<div class="invoice-number">
+<strong>PURCHASE #{{ purchase.purchase_number }}</strong><br>
+Date: {{ purchase.purchase_date.strftime('%d-%m-%Y %H:%M') if purchase.purchase_date else '' }}
+</div>
+
+</div>
+
+
+<!-- COMPANY + SUPPLIER -->
+
+<div class="invoice-details">
+
+<div class="company-info">
+
+<h6>To (Your Pharmacy)</h6>
+
+<p><strong>{{ current_user.company.company_name }}</strong></p>
+
+{% if current_user.company.company_address %}
+<p>{{ current_user.company.company_address }}</p>
+{% endif %}
+
+{% if current_user.company.company_phone %}
+<p>Phone: {{ current_user.company.company_phone }}</p>
+{% endif %}
+
+{% if current_user.company.gst_number %}
+<p>GSTIN: {{ current_user.company.gst_number }}</p>
+{% endif %}
+
+</div>
+
+
+<div class="supplier-info">
+
+<h6>From (Supplier)</h6>
+
+<p><strong>{{ purchase.supplier.supplier_name }}</strong></p>
+
+{% if purchase.supplier.supplier_address %}
+<p>{{ purchase.supplier.supplier_address }}</p>
+{% endif %}
+
+{% if purchase.supplier.supplier_phone %}
+<p>Phone: {{ purchase.supplier.supplier_phone }}</p>
+{% endif %}
+
+</div>
+
+</div>
+
+
+<!-- ITEMS TABLE -->
+
+<table class="items-table">
+
+<thead>
+<tr>
+<th>Product</th>
+<th class="text-center">Batch</th>
+<th class="text-center">Expiry</th>
+<th class="text-right">Qty</th>
+<th class="text-right">Price</th>
+<th class="text-right">Tax</th>
+<th class="text-right">Amount</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for item in purchase.items %}
+
+<tr>
+
+<td>
+<strong>{{ item.product.product_name }}</strong>
+</td>
+
+<td class="text-center">
+{{ item.batch_number }}
+</td>
+
+<td class="text-center">
+{{ item.expiry_date.strftime('%m/%Y') if item.expiry_date else 'N/A' }}
+</td>
+
+<td class="text-right">
+{{ item.quantity }}
+</td>
+
+<td class="text-right">
+₹{{ "%.2f"|format(item.unit_price) }}
+</td>
+
+<td class="text-right">
+₹{{ "%.2f"|format(item.tax_amount) }}
+</td>
+
+<td class="text-right">
+<strong>₹{{ "%.2f"|format(item.total_amount) }}</strong>
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+
+<!-- SUMMARY -->
+
+<div class="summary">
+
+<div class="summary-row">
+<span>Subtotal</span>
+<span>₹{{ "%.2f"|format(purchase.subtotal) }}</span>
+</div>
+
+<div class="summary-row">
+<span>Tax</span>
+<span>₹{{ "%.2f"|format(purchase.tax_amount) }}</span>
+</div>
+
+{% if purchase.discount_amount > 0 %}
+<div class="summary-row">
+<span>Discount</span>
+<span>-₹{{ "%.2f"|format(purchase.discount_amount) }}</span>
+</div>
+{% endif %}
+
+<div class="summary-row total">
+<span>TOTAL</span>
+<span>₹{{ "%.2f"|format(purchase.total_amount) }}</span>
+</div>
+
+</div>
+
+
+<!-- PAYMENT -->
+
+<div class="payment-info">
+
+<strong>Status:</strong> {{ purchase.payment_status.upper() }}
+
+{% if purchase.notes %}
+<br><strong>Notes:</strong> {{ purchase.notes }}
+{% endif %}
+
+</div>
+
+
+<div class="footer">
+
+Purchase invoice for stock records.<br>
+Goods received as per supplier invoice.<br>
+This is a computer generated document.
+
+</div>
+
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+
+<script>
+
+function printInvoice(){
+
+    const content = document.querySelector('.invoice-container').innerHTML;
+
+    const w = window.open('', '_blank', 'width=900,height=700');
+
+    w.document.write(`
+        <html>
+        <head>
+            <title>Invoice</title>
+            <style>
+                body { font-family: Arial; padding:20px; }
+                table { width:100%; border-collapse: collapse; }
+                th, td { padding:8px; border-bottom:1px solid #ddd; }
+                th { background:#f5f5f5; }
+                .text-right { text-align:right; }
+                .text-center { text-align:center; }
+            </style>
+        </head>
+        <body>
+            ${content}
+        </body>
+        </html>
+    `);
+
+    w.document.close();
+
+    setTimeout(function(){
+        w.print();
+        w.close();
+    }, 300);
+}
+
+</script>
+
+{% endblock %}

@@ -71,11 +71,41 @@
                                 <span class="badge bg-danger">Pending</span>
                             {% endif %}
                         </td>
-                        <td>
-                            <a href="{{ url_for('purchases.purchase_detail', purchase_id=purchase.id) }}" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-eye"></i> View
-                            </a>
-                        </td>
+<td class="text-center">
+
+<div class="d-flex justify-content-center gap-2">
+
+    <!-- VIEW -->
+    <a href="{{ url_for('purchases.purchase_detail', purchase_id=purchase.id) }}" 
+       class="btn btn-sm btn-primary rounded-circle"
+       title="View">
+        <i class="fas fa-eye"></i>
+    </a>
+
+    <!-- PRINT -->
+    <a href="{{ url_for('purchases.print_purchase', purchase_id=purchase.id) }}" 
+       class="btn btn-sm btn-dark rounded-circle"
+       title="Print">
+        <i class="fas fa-print"></i>
+    </a>
+
+<!-- DOWNLOAD -->
+<a href="{{ url_for('purchases.download_purchase_pdf', purchase_id=purchase.id) }}" 
+   class="btn btn-sm btn-info rounded-circle"
+   title="Download">
+    <i class="fas fa-download"></i>
+</a>
+
+    <!-- RETURN -->
+    <a href="{{ url_for('purchases.process_return', purchase_id=purchase.id) }}" 
+       class="btn btn-sm btn-warning rounded-circle"
+       title="Return">
+        <i class="fas fa-undo"></i>
+    </a>
+
+</div>
+
+</td>
                     </tr>
                     {% endfor %}
                 {% else %}
