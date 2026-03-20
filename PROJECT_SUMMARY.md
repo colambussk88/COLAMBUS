@@ -128,73 +128,73 @@ python run.py
 ## 📁 Project Architecture
 
 ```
-pharmacy-management-system/
-│
-├── app/                                  # Main application package
-│   ├── __init__.py                        # Flask app factory
-│   ├── models.py                          # Database models
-│   ├── utils.py                           # Utility/helper functions
-│   │
-│   ├── routes/                            # Application route modules
-│   │   ├── auth.py                         # Authentication (Login/Register)
-│   │   ├── dashboard.py                    # Dashboard & analytics
-│   │   ├── inventory.py                    # Product & stock management
-│   │   ├── sales.py                        # Sales & billing (POS)
-│   │   ├── purchases.py                    # Purchase management
-│   │   ├── customers.py                    # Customer management
-│   │   ├── suppliers.py                    # Supplier management
-│   │   ├── accounting.py                   # Expense tracking
-│   │   ├── reports.py                      # Report generation
-│   │   ├── alerts.py                       # Expiry & stock alerts
-│   │   ├── admin.py                        # Admin management
-│   │   ├── doctors.py                      # Doctor records
-│   │   ├── master.py                       # Master settings
-│   │   └── users.py                        # User management
-│   │
-│   ├── templates/                         # HTML templates
-│   │   ├── base.html                       # Main layout
-│   │   ├── login.html                      # Login page
-│   │   ├── register.html                   # Registration page
-│   │   ├── profile.html                    # User profile
-│   │   ├── change_password.html            # Password update
-│   │   ├── edit_profile.html               # Profile editing
-│   │   ├── access_denied.html              # Permission error page
-│   │   │
-│   │   ├── dashboard/                      # Dashboard templates
-│   │   ├── inventory/                      # Inventory templates
-│   │   ├── sales/                          # Sales templates
-│   │   ├── purchases/                      # Purchase templates
-│   │   ├── customers/                      # Customer templates
-│   │   ├── suppliers/                      # Supplier templates
-│   │   ├── accounting/                     # Accounting templates
-│   │   ├── reports/                        # Reports templates
-│   │   ├── alerts/                         # Alert templates
-│   │   ├── admin/                          # Admin templates
-│   │   ├── doctors/                        # Doctor templates
-│   │   ├── master/                         # Master templates
-│   │   └── users/                          # User templates
-│   │
-│   └── static/                             # Static files
-│       ├── css/                            # Stylesheets
-│       ├── js/                             # JavaScript files
-│       └── uploads/                        # Uploaded files
-│
-├── scripts/
-│   └── migrate_user_table.py               # Database migration script
-│
-├── venv/                                   # Virtual environment
-├── .env                                    # Environment variables
-├── .env.example                            # Sample environment file
-│
-├── config.py                               # Configuration settings
-├── run.py                                  # Application entry point
-├── requirements.txt                        # Python dependencies
-├── pharmacy.db                             # SQLite database
-│
-├── PROJECT_SUMMARY.md                      # Project overview
-├── SETUP_GUIDE.md                          # Setup documentation
-└── README.md                               # Project documentation
-```
+    pharmacy-management-system/
+    │
+    ├── app/                                  # Main application package
+    │   ├── __init__.py                        # Flask app factory
+    │   ├── models.py                          # Database models
+    │   ├── utils.py                           # Utility/helper functions
+    │   │
+    │   ├── routes/                            # Application route modules
+    │   │   ├── auth.py                         # Authentication (Login/Register)
+    │   │   ├── dashboard.py                    # Dashboard & analytics
+    │   │   ├── inventory.py                    # Product & stock management
+    │   │   ├── sales.py                        # Sales & billing (POS)
+    │   │   ├── purchases.py                    # Purchase management
+    │   │   ├── customers.py                    # Customer management
+    │   │   ├── suppliers.py                    # Supplier management
+    │   │   ├── accounting.py                   # Expense tracking
+    │   │   ├── reports.py                      # Report generation
+    │   │   ├── alerts.py                       # Expiry & stock alerts
+    │   │   ├── admin.py                        # Admin management
+    │   │   ├── doctors.py                      # Doctor records
+    │   │   ├── master.py                       # Master settings
+    │   │   └── users.py                        # User management
+    │   │
+    │   ├── templates/                         # HTML templates
+    │   │   ├── base.html                       # Main layout
+    │   │   ├── login.html                      # Login page
+    │   │   ├── register.html                   # Registration page
+    │   │   ├── profile.html                    # User profile
+    │   │   ├── change_password.html            # Password update
+    │   │   ├── edit_profile.html               # Profile editing
+    │   │   ├── access_denied.html              # Permission error page
+    │   │   │
+    │   │   ├── dashboard/                      # Dashboard templates
+    │   │   ├── inventory/                      # Inventory templates
+    │   │   ├── sales/                          # Sales templates
+    │   │   ├── purchases/                      # Purchase templates
+    │   │   ├── customers/                      # Customer templates
+    │   │   ├── suppliers/                      # Supplier templates
+    │   │   ├── accounting/                     # Accounting templates
+    │   │   ├── reports/                        # Reports templates
+    │   │   ├── alerts/                         # Alert templates
+    │   │   ├── admin/                          # Admin templates
+    │   │   ├── doctors/                        # Doctor templates
+    │   │   ├── master/                         # Master templates
+    │   │   └── users/                          # User templates
+    │   │
+    │   └── static/                             # Static files
+    │       ├── css/                            # Stylesheets
+    │       ├── js/                             # JavaScript files
+    │       └── uploads/                        # Uploaded files
+    │
+    ├── scripts/
+    │   └── migrate_user_table.py               # Database migration script
+    │
+    ├── venv/                                   # Virtual environment
+    ├── .env                                    # Environment variables
+    ├── .env.example                            # Sample environment file
+    │
+    ├── config.py                               # Configuration settings
+    ├── run.py                                  # Application entry point
+    ├── requirements.txt                        # Python dependencies
+    ├── pharmacy.db                             # SQLite database
+    │
+    ├── PROJECT_SUMMARY.md                      # Project overview
+    ├── SETUP_GUIDE.md                          # Setup documentation
+    └── README.md                               # Project documentation
+    ```
 
 ## 🗄️ Database Schema
 

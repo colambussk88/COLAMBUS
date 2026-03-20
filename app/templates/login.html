@@ -4,50 +4,217 @@
 
 {% block content %}
 
-<div class="container d-flex justify-content-center align-items-center" style="min-height:80vh;">
-    <div class="col-md-6 col-lg-4">
-        <div class="card shadow-lg border-0">
+<style>
+    /* 🌈 Animated Gradient Background */
+    body {
+        background: linear-gradient(135deg, #d1f5e4, #e4ebe8, #a0cbbe);
+        background-size: 200% 200%;
+        animation: gradientMove 8s ease infinite;
+    }
 
-            <div class="card-header text-center bg-success text-white">
+    @keyframes gradientMove {
+        0% { background-position: left; }
+        100% { background-position: right; }
+    }
+
+    /* 💎 Card */
+    .login-card {
+        backdrop-filter: blur(14px);
+        background: rgba(255, 255, 255, 0.92);
+        border-radius: 18px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+        animation: fadeSlide 0.6s ease;
+        transition: 0.3s;
+    }
+
+    .login-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 15px 50px rgba(0,0,0,0.35);
+    }
+
+    @keyframes fadeSlide {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* ✨ Floating Inputs */
+    .form-floating input {
+        border-radius: 8px;
+    }
+
+    .form-floating input:focus {
+        border-color: #198754;
+        box-shadow: 0 0 8px rgba(25,135,84,0.4);
+    }
+
+    /* 👁 Password Icon */
+    .password-wrapper {
+        position: relative;
+    }
+
+    .toggle-password {
+        position: absolute;
+        top: 50%;
+        right: 12px;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: #777;
+        transition: 0.2s;
+    }
+
+    .toggle-password:hover {
+        color: #198754;
+        transform: translateY(-50%) scale(1.1);
+    }
+
+    /* 🔘 Button */
+    .btn-login {
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        border-radius: 8px;
+        position: relative;
+        overflow: hidden;
+        transition: 0.3s;
+    }
+
+    .btn-login:hover {
+        background: linear-gradient(45deg, #198754, #20c997);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+    }
+
+    /* Ripple Effect */
+    .btn-login::after {
+        content: "";
+        position: absolute;
+        width: 100px;
+        height: 100px;
+        background: rgba(255,255,255,0.4);
+        border-radius: 50%;
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    .btn-login:active::after {
+        transform: scale(2);
+        opacity: 1;
+        transition: 0.4s;
+    }
+
+    /* ✅ Checkbox */
+    .form-check-input {
+        transform: scale(1.2);
+        cursor: pointer;
+    }
+
+    /* 🔗 Footer Links */
+    .card-footer a {
+        text-decoration: none;
+        transition: 0.2s;
+    }
+
+    .card-footer a:hover {
+        color: #198754;
+        text-decoration: underline;
+    }
+
+    /* ❌ Error Animation */
+    @keyframes shake {
+        0% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        50% { transform: translateX(5px); }
+        100% { transform: translateX(0); }
+    }
+
+    .error {
+        animation: shake 0.3s;
+    }
+</style>
+
+<div class="container d-flex justify-content-center align-items-center" style="min-height:90vh;">
+    <div class="col-md-6 col-lg-4">
+        <div class="card border-0 login-card">
+
+            <!-- Header -->
+            <div class="card-header text-center bg-success text-white rounded-top">
                 <h4 class="mb-0">
                     <i class="fas fa-pills"></i> PharmaCare Login
                 </h4>
+                <small>Smart Pharmacy Management</small>
             </div>
 
+            <!-- Body -->
             <div class="card-body p-4">
-                <form method="POST">
+                <form method="POST" id="loginForm">
 
-                    <div class="mb-3">
-                        <label class="form-label">Username</label>
-                        <input type="text" class="form-control" name="username" required autofocus>
+                    <!-- Username -->
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" name="username" placeholder="Username" required autofocus>
+                        <label>Username</label>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Password</label>
-                        <input type="password" class="form-control" name="password" required>
+                    <!-- Password -->
+                    <div class="form-floating mb-3 password-wrapper">
+                        <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
+                        <label>Password</label>
+                        <i class="fas fa-eye toggle-password" onclick="togglePassword()"></i>
                     </div>
 
+                    <!-- Remember -->
                     <div class="form-check mb-3">
                         <input type="checkbox" class="form-check-input" name="remember">
                         <label class="form-check-label">Remember me</label>
                     </div>
 
-                    <button type="submit" class="btn btn-success w-100">
+                    <!-- Button -->
+                    <button type="submit" id="loginBtn" class="btn btn-success w-100 btn-login">
                         Login
                     </button>
 
                 </form>
             </div>
 
+            <!-- Footer -->
             <div class="card-footer text-center bg-white">
-                <p class="mb-0">
+                <p class="mb-1">
                     Don't have an account?
                     <a href="{{ url_for('auth.register') }}" class="fw-bold">Register here</a>
                 </p>
+                <small>
+                    <a href="#">Forgot Password?</a>
+                </small>
             </div>
 
         </div>
     </div>
 </div>
+
+<script>
+    // 👁 Toggle Password
+    function togglePassword() {
+        const pass = document.getElementById("password");
+        pass.type = pass.type === "password" ? "text" : "password";
+    }
+
+    // ⏳ Loading Button
+    document.getElementById("loginForm").addEventListener("submit", function () {
+        const btn = document.getElementById("loginBtn");
+        btn.innerHTML = "Logging in...";
+        btn.disabled = true;
+    });
+
+    // ⌨ Enter Key Submit
+    document.getElementById("password").addEventListener("keypress", function(e) {
+        if (e.key === "Enter") {
+            document.getElementById("loginForm").submit();
+        }
+    });
+</script>
 
 {% endblock %}
