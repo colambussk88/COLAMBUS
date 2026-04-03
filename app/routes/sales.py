@@ -319,13 +319,12 @@ def download_invoice_pdf(sale_id):
         return jsonify({'success': False, 'message': 'Invoice not found'}), 404
 
     try:
-
-        # Register Unicode font (supports ₹)
+        # Font (₹ support)
         pdfmetrics.registerFont(
             TTFont('DejaVu', 'app/static/uploads/DejaVuSans.ttf')
         )
 
-        # Calculate returns
+        # Returns calculation
         returns = SalesReturn.query.filter_by(sale_id=sale_id).all()
         returned_amount = sum(r.refund_amount for r in returns)
         net_total = sale.total_amount - returned_amount
@@ -341,91 +340,84 @@ def download_invoice_pdf(sale_id):
             rightMargin=40
         )
 
-        styles = getSampleStyleSheet()
         elements = []
-
         company = sale.company
 
-        # ---------- HEADER ----------
-        header_style = ParagraphStyle(
-            'Header',
-            parent=styles['Normal'],
-            fontSize=14,
-            alignment=TA_CENTER,
-            fontName='DejaVu'
-        )
+        # ---------- HEADER BAR ----------
+        header_bg = colors.HexColor("#1a3a52")
 
-        info_style = ParagraphStyle(
-            'Info',
-            parent=styles['Normal'],
-            fontSize=9,
-            alignment=TA_CENTER,
-            fontName='DejaVu'
-        )
+        header_table = Table([
+            [Paragraph(f"<b>{company.company_name}</b>",
+                       ParagraphStyle('header',
+                                      fontSize=16,
+                                      textColor=colors.white,
+                                      alignment=TA_LEFT,
+                                      fontName='DejaVu'))]
+        ], colWidths=[500])
 
-        elements.append(Paragraph(company.company_name, header_style))
-
-        company_info = []
-
-        if getattr(company, 'address', None):
-            company_info.append(company.address)
-
-        if getattr(company, 'phone', None):
-            company_info.append(f"Phone: {company.phone}")
-
-        if getattr(company, 'email', None):
-            company_info.append(f"Email: {company.email}")
-
-        elements.append(Paragraph("<br/>".join(company_info), info_style))
-
-        elements.append(Spacer(1, 12))
-
-        # ---------- TITLE ----------
-        title_style = ParagraphStyle(
-            'Title',
-            parent=styles['Heading1'],
-            alignment=TA_CENTER,
-            fontName='DejaVu'
-        )
-
-        elements.append(Paragraph("INVOICE", title_style))
-        elements.append(Spacer(1, 10))
-
-        # ---------- INVOICE INFO ----------
-        invoice_data = [
-            ['Invoice No', sale.invoice_number],
-            ['Date', sale.invoice_date.strftime('%d-%m-%Y')],
-            ['Time', sale.invoice_date.strftime('%H:%M:%S')]
-        ]
-
-        invoice_table = Table(invoice_data, colWidths=[100, 200])
-
-        invoice_table.setStyle(TableStyle([
-            ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-            ('BACKGROUND', (0,0), (0,-1), colors.lightgrey),
-            ('FONTNAME', (0,0), (0,-1), 'DejaVu')
+        header_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), header_bg),
+            ('LEFTPADDING', (0,0), (-1,-1), 10),
+            ('TOPPADDING', (0,0), (-1,-1), 8),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 8),
         ]))
 
-        elements.append(invoice_table)
+        elements.append(header_table)
+
+        # Company Info
+        elements.append(Spacer(1, 8))
+        company_info = f"""
+        {company.address or ''}<br/>
+        phone: {company.phone or ''} &nbsp;&nbsp; Mail: {company.email or ''}
+        """
+        elements.append(Paragraph(company_info,
+                                  ParagraphStyle('company',
+                                                 fontSize=9,
+                                                 fontName='DejaVu')))
+
         elements.append(Spacer(1, 15))
 
-        # ---------- BILL TO ----------
-        bill_data = [
+        # ---------- TITLE ----------
+        elements.append(Paragraph(
+            "<b>INVOICE</b>",
+            ParagraphStyle('title',
+                           fontSize=18,
+                           alignment=TA_CENTER,
+                           fontName='DejaVu')
+        ))
+        elements.append(Spacer(1, 12))
+
+        # ---------- INVOICE DETAILS ----------
+        info_table = Table([
+            ['Invoice No', sale.invoice_number],
+            ['Date', sale.invoice_date.strftime('%d-%m-%Y')],
+            ['Time', sale.invoice_date.strftime('%H:%M:%S')],
+        ], colWidths=[120, 200])
+
+        info_table.setStyle(TableStyle([
+            ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+            ('BACKGROUND', (0,0), (0,-1), colors.HexColor("#f0f4f8")),
+            ('FONTNAME',(0,0),(-1,-1),'DejaVu')
+        ]))
+
+        elements.append(info_table)
+        elements.append(Spacer(1, 15))
+
+        # ---------- BILL SECTION ----------
+        bill_table = Table([
             [
                 Paragraph(f"<b>Bill To</b><br/>{sale.customer_name or 'Walk-in Customer'}",
                           ParagraphStyle('normal', fontName='DejaVu')),
                 Paragraph(f"<b>Sold By</b><br/>{company.company_name}",
                           ParagraphStyle('normal', fontName='DejaVu'))
             ]
-        ]
+        ], colWidths=[250,250])
 
-        bill_table = Table(bill_data, colWidths=[250,250])
         elements.append(bill_table)
-
         elements.append(Spacer(1, 20))
 
-        # ---------- ITEMS TABLE ----------
-        item_data = [['Item', 'Qty', 'Unit Price', 'Discount', 'Tax', 'Amount']]
+        # ---------- ITEMS ----------
+        item_data = [['Item', 'Qty', 'Price', 'Discount', 'Tax', 'Amount']]
 
         for item in sale.items:
             item_data.append([
@@ -437,25 +429,20 @@ def download_invoice_pdf(sale_id):
                 f"₹ {item.total_amount:.2f}"
             ])
 
-        items_table = Table(
-            item_data,
-            colWidths=[220,50,80,80,60,80]
-        )
+        items_table = Table(item_data, colWidths=[200,50,80,80,60,80])
 
         items_table.setStyle(TableStyle([
+            ('FONTNAME',(0,0),(-1,-1),'DejaVu'),
 
-    ('FONTNAME',(0,0),(-1,-1),'DejaVu'),
+            ('BACKGROUND',(0,0),(-1,0),header_bg),
+            ('TEXTCOLOR',(0,0),(-1,0),colors.white),
 
-    ('BACKGROUND',(0,0),(-1,0),colors.HexColor('#1a3a52')),
-    ('TEXTCOLOR',(0,0),(-1,0),colors.white),
+            ('ALIGN',(1,1),(-1,-1),'RIGHT'),
+            ('GRID',(0,0),(-1,-1),0.5,colors.grey),
 
-    ('ALIGN',(1,1),(-1,-1),'RIGHT'),
-    ('GRID',(0,0),(-1,-1),0.5,colors.grey),
-
-    ('ROWBACKGROUNDS',(0,1),(-1,-1),
-    [colors.white,colors.HexColor('#f7f7f7')])
-
-]))
+            ('ROWBACKGROUNDS',(0,1),(-1,-1),
+             [colors.white, colors.HexColor('#f7f7f7')])
+        ]))
 
         elements.append(items_table)
         elements.append(Spacer(1, 20))
@@ -470,34 +457,35 @@ def download_invoice_pdf(sale_id):
         if returned_amount > 0:
             summary_data.append(['Returned', f"- ₹ {returned_amount:.2f}"])
 
-        summary_data.append(['NET TOTAL', f"₹ {net_total:.2f}"])
+        summary_data.append(['TOTAL', f"₹ {net_total:.2f}"])
 
-        summary_table = Table(summary_data, colWidths=[150,120])
+        summary_table = Table(summary_data, colWidths=[200,120])
 
         summary_table.setStyle(TableStyle([
+            ('FONTNAME',(0,0),(-1,-1),'DejaVu'),
 
-    ('FONTNAME',(0,0),(-1,-1),'DejaVu'),
+            ('ALIGN',(1,0),(-1,-1),'RIGHT'),
+            ('GRID',(0,0),(-1,-2),0.5,colors.grey),
 
-    ('ALIGN',(1,0),(-1,-1),'RIGHT'),
-    ('GRID',(0,0),(-1,-2),0.5,colors.grey),
+            ('BACKGROUND',(0,-1),(-1,-1),header_bg),
+            ('TEXTCOLOR',(0,-1),(-1,-1),colors.white),
 
-    ('FONTSIZE',(0,-1),(-1,-1),12),
+            ('FONTSIZE',(0,-1),(-1,-1),13)
+        ]))
 
-    ('BACKGROUND',(0,-1),(-1,-1),colors.HexColor('#1a3a52')),
-    ('TEXTCOLOR',(0,-1),(-1,-1),colors.white)
-
-]))
         elements.append(summary_table)
+        elements.append(Spacer(1, 25))
 
-        elements.append(Spacer(1, 30))
+        # ---------- FOOTER ----------
+        elements.append(Paragraph(
+            "Thank you for your purchase <br/>This is a computer generated invoice.",
+            ParagraphStyle('footer',
+                           alignment=TA_CENTER,
+                           fontSize=9,
+                           fontName='DejaVu')
+        ))
 
-        footer = Paragraph(
-            "Thank you for your purchase.<br/>This is a computer generated invoice.",
-            ParagraphStyle('footer', alignment=TA_CENTER, fontSize=8, fontName='DejaVu')
-        )
-
-        elements.append(footer)
-
+        # Build PDF
         doc.build(elements)
 
         buffer.seek(0)
@@ -511,8 +499,6 @@ def download_invoice_pdf(sale_id):
 
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
-    
-
 
 @sales_bp.route('/send-invoice-whatsapp/<int:sale_id>', methods=['POST'])
 @login_required

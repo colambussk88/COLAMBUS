@@ -236,7 +236,8 @@ def download_purchase_pdf(purchase_id):
         from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
         from reportlab.lib import colors
         from reportlab.lib.pagesizes import A4
-        from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.lib.styles import ParagraphStyle
+        from reportlab.lib.enums import TA_LEFT, TA_CENTER
         from reportlab.pdfbase import pdfmetrics
         from reportlab.pdfbase.ttfonts import TTFont
 
@@ -245,40 +246,150 @@ def download_purchase_pdf(purchase_id):
         )
 
         buffer = io.BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4)
 
-        styles = getSampleStyleSheet()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=A4,
+            topMargin=30,
+            bottomMargin=30,
+            leftMargin=40,
+            rightMargin=40
+        )
+
         elements = []
+        company = purchase.company
 
-        elements.append(Paragraph("PURCHASE INVOICE", styles['Title']))
-        elements.append(Spacer(1, 10))
+        # ---------- HEADER ----------
+        header_bg = colors.HexColor("#1a3a52")
 
-        elements.append(Paragraph(f"PO: {purchase.purchase_number}", styles['Normal']))
-        elements.append(Paragraph(f"Supplier: {purchase.supplier.supplier_name}", styles['Normal']))
+        header_table = Table([
+            [Paragraph(f"<b>{company.company_name}</b>",
+                       ParagraphStyle('header',
+                                      fontSize=16,
+                                      textColor=colors.white,
+                                      alignment=TA_LEFT,
+                                      fontName='DejaVu'))]
+        ], colWidths=[500])
 
-        elements.append(Spacer(1, 10))
-
-        data = [['Item','Qty','Price','Tax','Total']]
-
-        for i in purchase.items:
-            data.append([
-                i.product.product_name,
-                i.quantity,
-                i.unit_price,
-                i.tax_amount,
-                i.total_amount
-            ])
-
-        table = Table(data)
-        table.setStyle(TableStyle([
-            ('GRID',(0,0),(-1,-1),0.5,colors.grey)
+        header_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), header_bg),
+            ('LEFTPADDING', (0,0), (-1,-1), 10),
+            ('TOPPADDING', (0,0), (-1,-1), 8),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 8),
         ]))
 
-        elements.append(table)
+        elements.append(header_table)
 
-        elements.append(Spacer(1, 10))
+        # Company info
+        elements.append(Spacer(1, 8))
+        elements.append(Paragraph(
+            f"{company.address or ''}<br/>Phone: {company.phone or ''}",
+            ParagraphStyle('company', fontSize=9, fontName='DejaVu')
+        ))
 
-        elements.append(Paragraph(f"Total: ₹{purchase.total_amount}", styles['Heading2']))
+        elements.append(Spacer(1, 15))
+
+        # ---------- TITLE ----------
+        elements.append(Paragraph(
+            "<b>PURCHASE INVOICE</b>",
+            ParagraphStyle('title',
+                           fontSize=18,
+                           alignment=TA_CENTER,
+                           fontName='DejaVu')
+        ))
+
+        elements.append(Spacer(1, 12))
+
+        # ---------- PURCHASE INFO ----------
+        info_table = Table([
+            ['PO Number', purchase.purchase_number],
+            ['Date', purchase.purchase_date.strftime('%d-%m-%Y')],
+            ['Supplier Invoice', purchase.supplier_invoice_number or '-']
+        ], colWidths=[140, 250])
+
+        info_table.setStyle(TableStyle([
+            ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+            ('BACKGROUND', (0,0), (0,-1), colors.HexColor("#f0f4f8")),
+            ('FONTNAME',(0,0),(-1,-1),'DejaVu')
+        ]))
+
+        elements.append(info_table)
+        elements.append(Spacer(1, 15))
+
+        # ---------- SUPPLIER ----------
+        supplier_table = Table([
+            [
+                Paragraph(f"<b>Supplier</b><br/>{purchase.supplier.supplier_name}",
+                          ParagraphStyle('normal', fontName='DejaVu')),
+                Paragraph(f"<b>Purchased By</b><br/>{company.company_name}",
+                          ParagraphStyle('normal', fontName='DejaVu'))
+            ]
+        ], colWidths=[250,250])
+
+        elements.append(supplier_table)
+        elements.append(Spacer(1, 20))
+
+        # ---------- ITEMS ----------
+        item_data = [['Item', 'Qty', 'Price', 'Tax', 'Total']]
+
+        for item in purchase.items:
+            item_data.append([
+                item.product.product_name,
+                str(item.quantity),
+                f"₹ {item.unit_price:.2f}",
+                f"₹ {item.tax_amount:.2f}",
+                f"₹ {item.total_amount:.2f}"
+            ])
+
+        items_table = Table(item_data, colWidths=[200,60,80,80,80])
+
+        items_table.setStyle(TableStyle([
+            ('FONTNAME',(0,0),(-1,-1),'DejaVu'),
+
+            ('BACKGROUND',(0,0),(-1,0),header_bg),
+            ('TEXTCOLOR',(0,0),(-1,0),colors.white),
+
+            ('ALIGN',(1,1),(-1,-1),'RIGHT'),
+            ('GRID',(0,0),(-1,-1),0.5,colors.grey),
+
+            ('ROWBACKGROUNDS',(0,1),(-1,-1),
+             [colors.white, colors.HexColor('#f7f7f7')])
+        ]))
+
+        elements.append(items_table)
+        elements.append(Spacer(1, 20))
+
+        # ---------- SUMMARY ----------
+        summary_table = Table([
+            ['Subtotal', f"₹ {purchase.subtotal:.2f}"],
+            ['Tax', f"₹ {purchase.tax_amount:.2f}"],
+            ['Discount', f"- ₹ {purchase.discount_amount:.2f}"],
+            ['TOTAL', f"₹ {purchase.total_amount:.2f}"],
+        ], colWidths=[200,120])
+
+        summary_table.setStyle(TableStyle([
+            ('FONTNAME',(0,0),(-1,-1),'DejaVu'),
+
+            ('ALIGN',(1,0),(-1,-1),'RIGHT'),
+            ('GRID',(0,0),(-1,-2),0.5,colors.grey),
+
+            ('BACKGROUND',(0,-1),(-1,-1),header_bg),
+            ('TEXTCOLOR',(0,-1),(-1,-1),colors.white),
+
+            ('FONTSIZE',(0,-1),(-1,-1),13)
+        ]))
+
+        elements.append(summary_table)
+        elements.append(Spacer(1, 25))
+
+        # ---------- FOOTER ----------
+        elements.append(Paragraph(
+            "This is a system generated purchase invoice.",
+            ParagraphStyle('footer',
+                           alignment=TA_CENTER,
+                           fontSize=9,
+                           fontName='DejaVu')
+        ))
 
         doc.build(elements)
 

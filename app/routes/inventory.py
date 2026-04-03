@@ -200,16 +200,58 @@ def edit_product(product_id):
         product.product_name = request.form.get("product_name")
         product.generic_name = request.form.get("generic_name")
         product.brand = request.form.get("brand")
+        product.manufacturer = request.form.get("manufacturer")
+        product.batch_number = request.form.get("batch_number")
+
+        # ✅ CATEGORY
+        category_id = request.form.get("category_id")
+        if category_id:
+            category = db.session.get(Category, int(category_id))
+            product.category_id = int(category_id)
+            product.category = category.name if category else None
+
+        # ✅ UNIT
+        unit_id = request.form.get("unit_id")
+        if unit_id:
+            product.unit_id = int(unit_id)
+
+        # ✅ TAX (MAIN FIX)
+        product.tax_percentage = float(request.form.get("tax_percentage") or 0)
+
+        # ✅ PRICING
+        product.purchase_price = float(request.form.get("purchase_price") or 0)
+        product.selling_price = float(request.form.get("selling_price") or 0)
+        product.mrp = float(request.form.get("mrp") or 0)
+
+        # ✅ STOCK
+        product.quantity = int(request.form.get("quantity") or 0)
+        product.minimum_stock_level = int(request.form.get("minimum_stock_level") or 0)
+        product.reorder_level = int(request.form.get("reorder_level") or 0)
+
         product.updated_date = datetime.utcnow()
 
         db.session.commit()
 
+        print("✅ SAVED TAX:", product.tax_percentage)  # DEBUG
+
         flash("Product updated successfully", "success")
         return redirect(url_for('inventory.product_detail', product_id=product.id))
 
-    return render_template("inventory/edit_product.html", product=product)
+    # ✅ LOAD DROPDOWNS (VERY IMPORTANT)
+    categories = Category.query.filter(
+        Category.company_id == current_user.company_id
+    ).all()
 
+    units = Unit.query.filter(
+        Unit.company_id == current_user.company_id
+    ).all()
 
+    return render_template(
+        "inventory/edit_product.html",
+        product=product,
+        categories=categories,
+        units=units
+    )
 # ---------------------------------------------------
 # DELETE PRODUCT
 # ---------------------------------------------------
@@ -244,24 +286,44 @@ def low_stock_report():
     ).all()
 
     return render_template("inventory/low_stock_report.html", products=products)
-
-
 # ---------------------------------------------------
-# EXPIRY REPORT
+# expiry REPORT
 # ---------------------------------------------------
+
 @inventory_bp.route('/expiry-report')
 @login_required
 def expiry_report():
 
-    limit = datetime.utcnow().date() + timedelta(days=90)
+    days = request.args.get('days', 90, type=int)
+
+    today = datetime.utcnow().date()
+    end_date = today + timedelta(days=days)
 
     products = Product.query.filter(
         Product.company_id == current_user.company_id,
-        Product.expiry_date <= limit,
+        Product.expiry_date != None,
+        Product.expiry_date <= end_date,   # ✅ includes past + future
         Product.is_active == True
-    ).all()
+    ).order_by(Product.expiry_date).all()
 
-    return render_template("inventory/expiry_report.html", products=products)
+    products_info = []
+
+    for p in products:
+        if p.expiry_date:
+            days_left = (p.expiry_date.date() - today).days  # 🔥 negative = past
+        else:
+            days_left = None
+
+        products_info.append({
+            "product": p,
+            "expiry_date": p.expiry_date,
+            "days_left": days_left
+        })
+
+    return render_template(
+        "inventory/expiry_report.html",
+        products_info=products_info
+    )
 
 
 # ---------------------------------------------------
@@ -286,7 +348,7 @@ def barcode_search():
         "name": product.product_name,
         "price": product.selling_price,
         "stock": product.quantity
-    })
+    }) 
 
 
 # ---------------------------------------------------
@@ -300,13 +362,13 @@ def download_products_template():
     writer = csv.writer(output)
 
     writer.writerow([
-        'product_name','generic_name','brand','category','manufacturer',
-        'barcode','sku','purchase_price','selling_price','mrp','quantity'
+    'product_name','generic_name','brand','category','manufacturer',
+    'barcode','sku','purchase_price','selling_price','mrp','tax_percentage','quantity'
     ])
 
     writer.writerow([
-        'Paracetamol 500mg','Paracetamol','Crocin','Tablet','GSK',
-        '','SKU001','10','12','15','100'
+    'Paracetamol 500mg','Paracetamol','Crocin','Tablet','GSK',
+    '','SKU001','10','12','15','5','100'
     ])
 
     output.seek(0)
