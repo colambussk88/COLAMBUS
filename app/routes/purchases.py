@@ -9,12 +9,20 @@ purchases_bp = Blueprint('purchases', __name__, url_prefix='/purchases')
 
 
 def generate_purchase_number():
-    """Generate unique purchase number"""
-    timestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
-    import random
-    random_suffix = random.randint(1000, 9999)
-    return f"PO{timestamp}{random_suffix}"
+    """Generate short sequential purchase number"""
+    
+    last_purchase = db.session.query(Purchase).order_by(Purchase.id.desc()).first()
+    
+    if last_purchase and last_purchase.purchase_number:
+        try:
+            last_number = int(last_purchase.purchase_number.replace("PUR-", ""))
+        except:
+            last_number = last_purchase.id
+        new_number = last_number + 1
+    else:
+        new_number = 1
 
+    return f"PUR-{str(new_number).zfill(5)}"
 
 @purchases_bp.route('/')
 @login_required

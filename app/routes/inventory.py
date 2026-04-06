@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file
 from flask_login import login_required, current_user
-from app.models import db, Product, StockMovement, Category, Unit
+from app.models import db, Product, StockMovement, Category, Unit, Supplier, Purchase, PurchaseItem,PurchaseReturn
 from datetime import datetime, timedelta
 import csv
 import io
@@ -325,6 +325,58 @@ def expiry_report():
         products_info=products_info
     )
 
+@inventory_bp.route('/return-expired', methods=['POST'])
+@login_required
+def return_expired():
+
+    product_id = request.form.get('product_id')
+    quantity = int(request.form.get('quantity', 0))
+
+    if not product_id or quantity <= 0:
+        flash("Invalid input", "danger")
+        return redirect(url_for('inventory.expiry_report'))
+
+    product = Product.query.get(product_id)
+
+    if not product:
+        flash("Product not found", "danger")
+        return redirect(url_for('inventory.expiry_report'))
+
+    if quantity > product.quantity:
+        flash("Not enough stock", "danger")
+        return redirect(url_for('inventory.expiry_report'))
+
+    # 🔍 Get latest purchase item (for supplier link)
+    purchase_item = PurchaseItem.query.filter_by(
+        product_id=product.id
+    ).order_by(PurchaseItem.id.desc()).first()
+
+    if not purchase_item:
+        flash("No purchase found for this product", "danger")
+        return redirect(url_for('inventory.expiry_report'))
+
+    # 💰 Calculate credit
+    credit_amount = quantity * purchase_item.unit_price
+
+    # 🧾 Create purchase return
+    purchase_return = PurchaseReturn(
+        purchase_id=purchase_item.purchase_id,
+        product_id=product.id,
+        batch_number=purchase_item.batch_number,
+        quantity=quantity,
+        reason="Expired",
+        credit_amount=credit_amount
+    )
+
+    db.session.add(purchase_return)
+
+    # 📦 Reduce stock
+    product.quantity -= quantity
+
+    db.session.commit()
+
+    flash("Returned to supplier successfully", "success")
+    return redirect(url_for('inventory.expiry_report'))
 
 # ---------------------------------------------------
 # BARCODE SEARCH

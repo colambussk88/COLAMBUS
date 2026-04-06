@@ -14,8 +14,8 @@
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-hover">
-                <thead class="table-light">
+            <table class="table table-hover table-bordered">
+                <thead class="table-light text-center">
                     <tr>
                         <th>Product Name</th>
                         <th>SKU</th>
@@ -32,22 +32,26 @@
                     {% set product = item.product %}
                     {% set days_left = item.days_left %}
                     <tr>
-                        <td>
+                        <td class="text-center">
                             <strong>{{ product.product_name }}</strong><br>
                             <small class="text-muted">{{ product.generic_name or '' }}</small>
                         </td>
-                        <td>{{ product.sku }}</td>
-                        <td>{{ product.batch_number or 'N/A' }}</td>
-                        <td>{{ item.expiry_date.strftime('%Y-%m-%d') if item.expiry_date else 'N/A' }}</td>
-                        <td>
+                        <td class="text-center">{{ product.sku }}</td>
+                        <td class="text-center">{{ product.batch_number or 'N/A' }}</td>
+                        <td class="text-center" style="white-space: nowrap;">
+    {{ item.expiry_date.strftime('%Y-%m-%d') if item.expiry_date else 'N/A' }}
+                        </td>
+                        <td class="text-center">
                             {% if days_left is not none and days_left > 0 %}
                             <strong>{{ days_left }} days</strong>
                             {% else %}
                             <span class="badge bg-danger">EXPIRED</span>
                             {% endif %}
                         </td>
-                        <td>{{ product.quantity }}</td>
-                        <td>
+                        <td class="text-center">
+                         {{ product.quantity }}
+                         </td>
+                        <td class="text-center">
     {% if days_left is not none %}
         {% if days_left < 0 %}
             <span class="badge bg-danger">Expired</span>
@@ -63,10 +67,39 @@
     {% endif %}
 </td>
                         <td>
-                            <a href="{{ url_for('inventory.product_detail', product_id=product.id) }}" class="btn btn-sm btn-info">
-                                <i class="fas fa-eye"></i> View
-                            </a>
-                        </td>
+    <div style="display:flex; gap:5px; align-items:center;">
+
+        <!-- ✅ VIEW BUTTON -->
+        <a href="{{ url_for('inventory.product_detail', product_id=product.id) }}"
+           class="btn btn-sm btn-info">
+            <i class="fas fa-eye"></i>
+        </a>
+
+        <!-- ✅ RETURN BUTTON (ONLY IF EXPIRED) -->
+        {% if days_left is not none and days_left < 0 %}
+        <form method="POST"
+              action="{{ url_for('inventory.return_expired') }}"
+              style="display:flex; gap:3px;">
+
+            <input type="hidden" name="product_id" value="{{ product.id }}">
+
+            <input type="number"
+                   name="quantity"
+                   min="1"
+                   max="{{ product.quantity }}"
+                   placeholder="Qty"
+                   style="width:65px; height:32px; padding:2px 6px;"
+                   required>
+
+            <button class="btn btn-sm btn-danger">
+                Return
+            </button>
+
+        </form>
+        {% endif %}
+
+    </div>
+</td>
                     </tr>
                     {% endfor %}
                 </tbody>

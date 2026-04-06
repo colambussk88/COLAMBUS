@@ -19,11 +19,20 @@ sales_bp = Blueprint('sales', __name__, url_prefix='/sales')
 
 
 def generate_invoice_number():
-    """Generate unique invoice number"""
-    timestamp = datetime.utcnow().strftime('%Y%m%d%H%M%S')
-    import random
-    random_suffix = random.randint(1000, 9999)
-    return f"INV{timestamp}{random_suffix}"
+    """Generate short sequential invoice number"""
+    
+    last_sale = db.session.query(Sale).order_by(Sale.id.desc()).first()
+    
+    if last_sale and last_sale.invoice_number:
+        try:
+            last_number = int(last_sale.invoice_number.replace("INV-", ""))
+        except:
+            last_number = last_sale.id
+        new_number = last_number + 1
+    else:
+        new_number = 1
+
+    return f"INV-{str(new_number).zfill(5)}"
 
 
 @sales_bp.route('/pos')
