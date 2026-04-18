@@ -196,13 +196,16 @@ def login():
 
             flash("Login successful!", "success")
 
-            return redirect(url_for("dashboard.dashboard"))
+            # ✅ ROLE BASED LOGIN (THIS IS THE ONLY CHANGE)
+            if user.role == "owner":
+                return redirect(url_for("dashboard.dashboard"))  # Admin
+            else:
+                return redirect(url_for("dashboard.dashboard"))  # Staff
 
         else:
             flash("Invalid username or password.", "danger")
 
     return render_template("login.html")
-
 
 @auth_bp.route("/logout")
 @login_required
