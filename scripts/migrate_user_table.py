@@ -8,13 +8,15 @@ This script will:
 
 Run: python scripts/migrate_user_table.py
 """
+
 import sqlite3
 import os
 
 import config
 
 # Respect instance DB location
-DB = os.environ.get('DATABASE_URL') or os.path.join(config.INSTANCE_DIR, 'pharmacy.db')
+DB = os.environ.get("DATABASE_URL") or os.path.join(config.INSTANCE_DIR, "pharmacy.db")
+
 
 def migrate():
     conn = sqlite3.connect(DB)
@@ -24,7 +26,7 @@ def migrate():
     conn.commit()
 
     # Create new table
-    cur.execute('''
+    cur.execute("""
     CREATE TABLE IF NOT EXISTS user_new (
         id INTEGER PRIMARY KEY,
         company_id INTEGER NOT NULL,
@@ -37,31 +39,34 @@ def migrate():
         role VARCHAR(20) DEFAULT 'owner',
         FOREIGN KEY(company_id) REFERENCES company(id)
     );
-    ''')
+    """)
     conn.commit()
 
     # Copy data, set role='owner' for existing rows
-    cur.execute('''
+    cur.execute("""
     INSERT INTO user_new (id, company_id, username, password_hash, is_active, last_login, created_date, updated_date, role)
     SELECT id, company_id, username, password_hash, is_active, last_login, created_date, updated_date, 'owner' FROM user;
-    ''')
+    """)
     conn.commit()
 
     # Drop old table and rename
-    cur.execute('''
+    cur.execute("""
     DROP TABLE user;
-    ''')
+    """)
     conn.commit()
 
-    cur.execute('''
+    cur.execute("""
     ALTER TABLE user_new RENAME TO user;
-    ''')
+    """)
     conn.commit()
 
     cur.execute("PRAGMA foreign_keys=ON;")
     conn.commit()
     conn.close()
-    print('Migration finished. New `user` table has `role` and allows multiple users per company.')
+    print(
+        "Migration finished. New `user` table has `role` and allows multiple users per company."
+    )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     migrate()

@@ -2,7 +2,7 @@ from flask import Blueprint, render_template
 from flask_login import login_required, current_user
 from app.models import db, Sale, Purchase, PurchaseReturn, Product, Customer, Supplier, SalesReturn, SaleItem
 from datetime import datetime, timedelta
-from sqlalchemy import func, and_
+from sqlalchemy import func
 
 dashboard_bp = Blueprint('dashboard', __name__, url_prefix='/dashboard')
 
@@ -24,7 +24,6 @@ def dashboard():
         Sale.is_cancelled == False
     ).scalar() or 0
 
-    # TODAY SALES RETURNS
     today_returns = db.session.query(func.sum(SalesReturn.refund_amount)).join(
         Sale, SalesReturn.sale_id == Sale.id
     ).filter(
@@ -32,7 +31,7 @@ def dashboard():
         func.date(SalesReturn.return_date) == today
     ).scalar() or 0
 
-    today_sales = today_sales - today_returns
+    today_sales -= today_returns
 
     # -------------------------------
     # MONTHLY SALES
@@ -50,8 +49,42 @@ def dashboard():
         func.date(SalesReturn.return_date) >= month_start
     ).scalar() or 0
 
-    month_sales = month_sales - month_returns
+    month_sales -= month_returns
 
+# -------------------------------
+# MONTHLY PROFIT (FIXED)
+# -------------------------------
+
+      # 1. Sales profit
+    monthly_sales_profit = db.session.query(
+    func.sum(
+        (SaleItem.unit_price - Product.purchase_price) * SaleItem.quantity
+    )
+   ).join(Product, SaleItem.product_id == Product.id)\
+ .join(Sale, SaleItem.sale_id == Sale.id)\
+ .filter(
+    Sale.company_id == company_id,
+    func.date(Sale.invoice_date) >= month_start,
+    Sale.is_cancelled == False
+).scalar() or 0
+
+
+    # 2. Returns loss
+    monthly_return_loss = db.session.query(
+    func.sum(SalesReturn.refund_amount)
+).join(Sale, SalesReturn.sale_id == Sale.id)\
+ .filter(
+    Sale.company_id == company_id,
+    func.date(SalesReturn.return_date) >= month_start
+).scalar() or 0
+
+
+    # 3. Final monthly profit
+    monthly_profit = monthly_sales_profit - monthly_return_loss
+    
+    
+    
+    
     # -------------------------------
     # TOTAL PROFIT
     # -------------------------------
@@ -66,19 +99,16 @@ def dashboard():
         Sale.is_cancelled == False
      ).scalar() or 0
 
-    # SALES RETURN LOSS
     sales_return_loss = db.session.query(
         func.sum(SalesReturn.refund_amount)
-    ).join(
-        Sale, SalesReturn.sale_id == Sale.id
-    ).filter(
-        Sale.company_id == company_id
-    ).scalar() or 0
+    ).join(Sale, SalesReturn.sale_id == Sale.id)\
+     .filter(Sale.company_id == company_id)\
+     .scalar() or 0
 
     total_profit -= sales_return_loss
 
     # -------------------------------
-    # TOTAL PURCHASES (WITH RETURNS)
+    # TOTAL PURCHASES
     # -------------------------------
     total_purchases = db.session.query(
         func.sum(Purchase.total_amount)
@@ -88,11 +118,9 @@ def dashboard():
 
     total_purchase_returns = db.session.query(
         func.sum(PurchaseReturn.credit_amount)
-    ).join(
-        Purchase, PurchaseReturn.purchase_id == Purchase.id
-    ).filter(
-        Purchase.company_id == company_id
-    ).scalar() or 0
+    ).join(Purchase, PurchaseReturn.purchase_id == Purchase.id)\
+     .filter(Purchase.company_id == company_id)\
+     .scalar() or 0
 
     net_purchases = total_purchases - total_purchase_returns
 
@@ -106,7 +134,7 @@ def dashboard():
     ).count()
 
     # -------------------------------
-    # EXPIRY MEDICINES
+    # EXPIRY
     # -------------------------------
     today_date = datetime.utcnow().date()
 
@@ -128,6 +156,15 @@ def dashboard():
         Product.company_id == company_id,
         Product.expiry_date > today_date + timedelta(days=60),
         Product.expiry_date <= today_date + timedelta(days=90),
+        Product.is_active == True
+    ).count()
+
+    # -------------------------------
+    # EXPIRED (NEW)
+    # -------------------------------
+    expired = Product.query.filter(
+        Product.company_id == company_id,
+        Product.expiry_date < today_date,
         Product.is_active == True
     ).count()
 
@@ -155,7 +192,7 @@ def dashboard():
     ).limit(10).all()
 
     # -------------------------------
-    # SALES GRAPH (7 DAYS)
+    # SALES GRAPH
     # -------------------------------
     sales_by_day = {}
 
@@ -180,7 +217,7 @@ def dashboard():
     sales_by_day = dict(sorted(sales_by_day.items()))
 
     # -------------------------------
-    # TOTAL STOCK VALUE
+    # STOCK VALUE
     # -------------------------------
     total_stock_value = db.session.query(
         func.sum(Product.quantity * Product.purchase_price)
@@ -195,11 +232,13 @@ def dashboard():
         'today_sales': today_sales,
         'month_sales': month_sales,
         'total_profit': total_profit,
+        'monthly_profit': monthly_profit,
         'total_purchases': net_purchases,
         'low_stock_count': low_stock,
         'expiring_30': expiring_30,
         'expiring_60': expiring_60,
         'expiring_90': expiring_90,
+        'expired': expired,
         'total_customers': total_customers,
         'total_suppliers': total_suppliers,
         'total_stock_value': float(total_stock_value)
